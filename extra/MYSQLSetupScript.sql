@@ -1,4 +1,4 @@
-MYSQL 8.0.13
+/*MYSQL 8.0.13*/
 DROP DATABASE IF EXISTS ProductPickUpper;
 
 CREATE DATABASE ProductPickUpper;
@@ -8,62 +8,66 @@ SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 USE ProductPickUpper;
 
-CREATE TABLE UserRole(
-    `Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
+CREATE TABLE `UserRole`(
+    `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     `Role` VARCHAR(36),
     `Description` TEXT
 );
 
-CREATE TABLE User(
-    `Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
+CREATE TABLE `User`(
+    `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 	`Username` VARCHAR(50) NOT NULL,
 	`Name` VARCHAR(50) NOT NULL,
 	`Surname` VARCHAR(50) NOT NULL,
 	`Password` VARCHAR(512) NOT NULL,
+	`DateCreated` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`FK_UserRole` VARCHAR(36) NOT NULL,
     FOREIGN KEY (`FK_UserRole`) REFERENCES `UserRole`(`Id`)
 );
 
-CREATE TABLE Token(
-    `Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
-    `Token` VARCHAR(64) NOT NULL,
-    `DateStart` DATETIME NOT NULL DEFAULT NOW(),
+CREATE TABLE `Token`(
+    `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    `Token` VARCHAR(64) NOT NULL,	
+    `DateStart` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `DateEnd` DATETIME NOT NULL,
+	`DateCreated` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `FK_User` VARCHAR(36) NOT NULL,
     FOREIGN KEY (`FK_User`) REFERENCES `User`(`Id`)
 );
 
 
-CREATE TABLE ZipCode(
-    `Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
+CREATE TABLE `ZipCode`(
+    `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 	`Number` INT NOT NULL,
-    `City` VARCHAR(100) NOT NULL,
+    `City` VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE Customer(
-	`Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
+CREATE TABLE `Customer`(
+	`Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 	`Name` VARCHAR(50) NOT NULL,
 	`Surname` VARCHAR(50) NOT NULL,
     `Address` VARCHAR(100) NOT NULL,
+	`DateCreated` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`FK_ZipCode` VARCHAR(36),
 	FOREIGN KEY (`FK_ZipCode`) REFERENCES `ZipCode`(`Id`)
 );
 
-CREATE TABLE MetricUnit(
-    `Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
+CREATE TABLE `MetricUnit`(
+    `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 	`Unit` VARCHAR(36) NOT NULL,
-    `Abbreviation` VARCHAR(10) NOT NULL,
+    `Abbreviation` VARCHAR(10) NOT NULL
 );
 
-CREATE TABLE Price(
-    `Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
+CREATE TABLE `Price`(
+    `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 	`Price` decimal(15,2) NOT NULL,
-    `DateStart` DATETIME NOT NULL DEFAULT NOW(),
+    `DateStart` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `DateEnd` DATETIME NOT NULL,
+	`DateCreated` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE Product(
-    `Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
+CREATE TABLE `Product`(
+    `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     `Name` VARCHAR(50) NOT NULL,
     `FK_MetricUnit` VARCHAR(36) NOT NULL,
     `FK_Price` VARCHAR(36), 
@@ -71,54 +75,48 @@ CREATE TABLE Product(
     FOREIGN KEY (`FK_Price`) REFERENCES `Price`(`Id`)
 );
 
-CREATE TABLE Property(
-    `Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
-	`Name` VARCHAR(100) NOT NULL,
+CREATE TABLE `Property`(
+    `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+	`Name` VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE ProductProperties(
-    `Id` VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
+CREATE TABLE `ProductProperties`(
+    `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     `FK_Product` VARCHAR(36) NOT NULL,
     `FK_Property` VARCHAR(36) NOT NULL,
     FOREIGN KEY (`FK_Product`) REFERENCES `Product`(`Id`),
     FOREIGN KEY (`FK_Property`) REFERENCES `Property`(`Id`)
 );
 
-CREATE TABLE Prodaja(
-	id_prodaje INT PRIMARY KEY AUTO_INCREMENT,
-	Datum_Prodaje DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	Datum_Vpisa DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	Koliko INT NOT NULL,
-	id_stranke INT NOT NULL,
-	Uporabnisko_ime VARCHAR(50) NOT NULL,
-	Izdelek VARCHAR(50) NOT NULL,
-	FOREIGN KEY (id_stranke) REFERENCES Stranka(id_stranke), 
-	FOREIGN KEY (Uporabnisko_ime) REFERENCES Uporabnik(Uporabnisko_ime), 
-	FOREIGN KEY (Izdelek) REFERENCES Izdelek(Izdelek)
+CREATE TABLE `Sales`(
+	`Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+	`DateOfSale` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`DateCreated` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,	
+	`Amount` decimal(20,4),
+	`FK_Product` VARCHAR(36) NOT NULL,
+	`FK_Customer` VARCHAR(36) NOT NULL,
+	`FK_User` VARCHAR(36) NOT NULL,
+	FOREIGN KEY (`FK_Product`) REFERENCES `Product`(`Id`),
+	FOREIGN KEY (`FK_Customer`) REFERENCES `Customer`(`Id`),
+	FOREIGN KEY (`FK_User`) REFERENCES `User`(`Id`)
 );
 
-CREATE TABLE Nacrtovani_Prevzemi(
-	id_nacrtovani_prevzem INT PRIMARY KEY AUTO_INCREMENT,
-	Kolicina INT NOT NULL,
-	Dan VARCHAR(40) NOT NULL CHECK(Dan IN('Ponedeljek', 'Torek', 'Sreda', 'Četrtek', 'Petek', 'Sobota', 'Nedelja')),
-	Cas VARCHAR(40) DEFAULT 'Cel' CHECK(Cas IN('Zjutraj', 'Zvečer', 'Sredi', 'Cel')),
-	Izdelek VARCHAR(50) NOT NULL,
-	id_stranke INT NOT NULL,
-	Cas_Enkrat DATETIME,
-	FOREIGN KEY (id_stranke) REFERENCES Stranka(id_stranke), 
-	FOREIGN KEY (Izdelek) REFERENCES Izdelek(Izdelek)
+CREATE TABLE `ScheduledPickUp`(
+	`Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+	`Amount` decimal(20,4),
+	`WeekDay` TINYINT NOT NULL CHECK(`WeekDay` BETWEEN 0 AND 6),
+	`TimeOfDay` TINYINT NOT NULL CHECK(`TimeOfDay` BETWEEN 0 AND 6), /*Morning, Noon, Afternoon, Evening, Night, All*/
+	`DateStart` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, /*Active from*/
+    `DateEnd` DATETIME NOT NULL,
+	`FK_Product` VARCHAR(36) NOT NULL,
+	`FK_Customer` VARCHAR(36) NOT NULL,
+	`FK_User` VARCHAR(36) NOT NULL,
+	FOREIGN KEY (`FK_Product`) REFERENCES `Product`(`Id`),
+	FOREIGN KEY (`FK_Customer`) REFERENCES `Customer`(`Id`),
+	FOREIGN KEY (`FK_User`) REFERENCES `User`(`Id`)
 );
 
-CREATE TABLE Prenosi(
-	id_prenosa INT PRIMARY KEY AUTO_INCREMENT,
-	Kljuc VARCHAR(16),
-	Ime_datoteke VARCHAR(58),
-	Status_prenesenosti tinyint(1) DEFAULT 0,
-	Prenesel VARCHAR(50),
-	FOREIGN KEY (Prenesel) REFERENCES Uporabnik(Uporabnisko_ime)
-);
-
-INSERT INTO `UserRoles`(`Role`, `Description`) VALUES 
+INSERT INTO `UserRole`(`Role`, `Description`) VALUES 
 ('admin', 'Can view/create/edit/delete everything in the database'),
 ('user', 'Can view/create/edit/delete only on pickup table'),
 ('supervisor', 'Everything in user + can view/create/edit/delete scheduled pickups, customers and products');
@@ -142,9 +140,9 @@ INSERT INTO `MetricUnit`(`Unit`, `Abbreviation`) VALUES
 ('Pair', 'pair');
 
 INSERT INTO `Property`(`Name`) VALUES 
-('Organic'),
+('Organic');
 
---ZipCodes for Slovenia (Date: 12.7.2022)
+/*ZipCodes for Slovenia (Date: 12.7.2022)*/
 /*INSERT INTO `ZipCode`(`Number`, `City`) VALUES
 				(8341, 'Adlešiči'),
 				(5270, 'Ajdovščina'),
