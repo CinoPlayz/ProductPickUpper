@@ -1,21 +1,36 @@
-#![warn(non_snake_case)]
+#![allow(non_snake_case)]
 use std::path::Path;
 use owo_colors::{ colors::{ Green, Red }, OwoColorize };
-
-use actix_web::{ get, App, HttpRequest, HttpServer, Responder };
+use sqlx::MySqlPool;
+use actix_web::{ get, web, App, HttpRequest, HttpServer, Responder };
 use openssl::ssl::{ SslAcceptor, SslFiletype, SslMethod };
+mod handlers;
+mod shared;
 
 #[get("/")]
 async fn index(_req: HttpRequest) -> impl Responder {
     "Welcome!"
 }
 
+
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    //Tries to connect to a database
+    println!("Connecting to databse");
+    let pool = MySqlPool::connect("mysql://root:admin@127.0.0.1/ProductPickUpper").await.expect(
+        "Error while trying to connect to database"
+    );
+    println!("{}", format!("Connected to databse").fg::<Green>());
+
+    //Tries to find TLS keys for secure communication
+    println!("Finding TLS keys");
     let mut certExists: bool = false;
-    let mut sslBuilder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+    let mut sslBuilder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).expect(
+        "Error while creating ssl builder: "
+    );
     if Path::new("key.pem").exists() && Path::new("cert.pem").exists() {
-        println!("Found TSL keys (key.pem, cert.pem)");
+        println!("Found TLS keys (key.pem, cert.pem)");
         certExists = true;
         // load TLS keys
         // to create a self-signed temporary cert for testing:
@@ -42,12 +57,22 @@ async fn main() -> std::io::Result<()> {
         }
     } else {
         println!(
-            "Did not found TSL keys (key.pem, cert.pem) {}",
-            "Consider using TSL encryption for safer communication".yellow()
+            "Did not found TLS keys (key.pem, cert.pem) {}",
+            "Consider using TLS encryption for safer communication".yellow()
         );
     }
 
-    let httpServer = HttpServer::new(|| App::new().service(index));
+    let httpServer = HttpServer::new(move ||
+        App::new()
+            .app_data(
+                web::Data::new(shared::structs::AppState {
+                    version: String::from("0.0.1"),
+                    pool: pool.clone(),
+                })
+            )
+            .service(index)
+            .service(handlers::User::userGet::userGetAll)
+    );
 
     if certExists {
         println!("{}", format!("Server starting").fg::<Green>());
