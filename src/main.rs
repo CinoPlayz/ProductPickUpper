@@ -1,11 +1,14 @@
 #![allow(non_snake_case)]
-use std::path::Path;
+use std::{env, path::Path};
 use owo_colors::{ colors::{ Green, Red }, OwoColorize };
 use sqlx::MySqlPool;
 use actix_web::{ get, web, App, HttpRequest, HttpServer, Responder };
 use openssl::ssl::{ SslAcceptor, SslFiletype, SslMethod };
+use crate::shared::chrono::getCurrentTimeStr;
 mod handlers;
 mod shared;
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[get("/")]
 async fn index(_req: HttpRequest) -> impl Responder {
@@ -16,48 +19,59 @@ async fn index(_req: HttpRequest) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    //Load environment variables
+    dotenvy::from_path("config/.env").expect("Error while reding from config/.env: ");
+
+    println!("{} - Reading MYSQL_URL from .env file", getCurrentTimeStr());
+    let envDBUrl = env::var("MYSQL_URL").expect("Error while reding MYSQL_URL variable:");
+
+    println!("{} - Reading IP_WITH_PORT from .env file", getCurrentTimeStr());
+    let envIpWithPort = env::var("IP_WITH_PORT").expect("Error while reding IP_WITH_PORT variable:");
+
+
+
     //Tries to connect to a database
-    println!("Connecting to databse");
-    let pool = MySqlPool::connect("mysql://root:admin@127.0.0.1/ProductPickUpper").await.expect(
+    println!("{} - Connecting to databse", getCurrentTimeStr());
+    let pool = MySqlPool::connect(&envDBUrl).await.expect(
         "Error while trying to connect to database"
     );
-    println!("{}", format!("Connected to databse").fg::<Green>());
+    println!("{} - {}", getCurrentTimeStr(), format!("Connected to databse").fg::<Green>());
 
     //Tries to find TLS keys for secure communication
-    println!("Finding TLS keys");
+    println!("{} - Finding TLS keys", getCurrentTimeStr());
     let mut certExists: bool = false;
     let mut sslBuilder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).expect(
         "Error while creating ssl builder: "
     );
     if Path::new("key.pem").exists() && Path::new("cert.pem").exists() {
-        println!("Found TLS keys (key.pem, cert.pem)");
+        println!("{} - Found TLS keys (key.pem, cert.pem)", getCurrentTimeStr());
         certExists = true;
         // load TLS keys
         // to create a self-signed temporary cert for testing:
         // `openssl req -x509 -newkey rsa:4096 -nodes -keyout key.pem -out cert.pem -days 365 -subj '/CN=localhost'`
 
-        match sslBuilder.set_private_key_file("key.pem", SslFiletype::PEM) {
+        match sslBuilder.set_private_key_file("config/key.pem", SslFiletype::PEM) {
             Ok(_) => {
-                println!("{}", format!("Opened key.pem").fg::<Green>());
+                println!("{} - {}", getCurrentTimeStr(), format!("Opened key.pem").fg::<Green>());
             }
             Err(e) => {
-                println!("{}", format!("Error while opening key.pem: {}", e).fg::<Red>());
+                println!("{} - {}", getCurrentTimeStr(), format!("Error while opening key.pem: {}", e).fg::<Red>());
                 return Ok(());
             }
         }
 
-        match sslBuilder.set_certificate_chain_file("cert.pem") {
+        match sslBuilder.set_certificate_chain_file("config/cert.pem") {
             Ok(_) => {
-                println!("{}", format!("Opened cert.pem").fg::<Green>());
+                println!("{} - {}", getCurrentTimeStr(), format!("Opened cert.pem").fg::<Green>());
             }
             Err(e) => {
-                println!("{}", format!("Error while opening cert.pem: {}", e).fg::<Red>());
+                println!("{} - {}", getCurrentTimeStr(), format!("Error while opening cert.pem: {}", e).fg::<Red>());
                 return Ok(());
             }
         }
     } else {
         println!(
-            "Did not found TLS keys (key.pem, cert.pem) {}",
+            "{} - Did not found TLS keys (key.pem, cert.pem) {}", getCurrentTimeStr(),
             "Consider using TLS encryption for safer communication".yellow()
         );
     }
@@ -66,7 +80,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(
                 web::Data::new(shared::structs::AppState {
-                    version: String::from("0.0.1"),
+                    version: VERSION.to_string(),
                     pool: pool.clone(),
                 })
             )
@@ -75,15 +89,15 @@ async fn main() -> std::io::Result<()> {
     );
 
     if certExists {
-        println!("{}", format!("Server starting").fg::<Green>());
+        println!("{} - {}", getCurrentTimeStr(), format!("Server starting with {}", envIpWithPort).fg::<Green>());
         return httpServer
-            .bind_openssl("127.0.0.1:8080", sslBuilder)
+            .bind_openssl(&envIpWithPort, sslBuilder)
             .expect("Error while setting address with port/openssl: ")
             .run().await;
     } else {
-        println!("{}", format!("Server starting").fg::<Green>());
+        println!("{} - {}", getCurrentTimeStr(), format!("Server starting with {}", envIpWithPort).fg::<Green>());
         return httpServer
-            .bind("127.0.0.1:8080")
+            .bind(&envIpWithPort)
             .expect("Error while setting address with port: ")
             .run().await;
     }
