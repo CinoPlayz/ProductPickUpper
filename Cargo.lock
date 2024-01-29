@@ -1362,6 +1362,8 @@ dependencies = [
  "dotenvy",
  "openssl",
  "owo-colors",
+ "rand",
+ "regex",
  "rust-argon2",
  "serde",
  "serde_derive",

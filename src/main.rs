@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use std::{env, path::Path};
+use std::{ env, path::Path };
 use owo_colors::{ colors::{ Green, Red }, OwoColorize };
 use sqlx::MySqlPool;
 use actix_web::{ get, web, App, HttpRequest, HttpServer, Responder };
@@ -15,10 +15,10 @@ async fn index(_req: HttpRequest) -> impl Responder {
     "Welcome!"
 }
 
-
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    println!();
+
     //Load environment variables
     dotenvy::from_path("config/.env").expect("Error while reding from config/.env: ");
 
@@ -26,9 +26,14 @@ async fn main() -> std::io::Result<()> {
     let envDBUrl = env::var("MYSQL_URL").expect("Error while reding MYSQL_URL variable:");
 
     println!("{} - Reading IP_WITH_PORT from .env file", getCurrentTimeStr());
-    let envIpWithPort = env::var("IP_WITH_PORT").expect("Error while reding IP_WITH_PORT variable:");
+    let envIpWithPort = env
+        ::var("IP_WITH_PORT")
+        .expect("Error while reding IP_WITH_PORT variable:");
 
-
+    println!("{} - Reading PASSWORD_PAPPER from .env file", getCurrentTimeStr());
+    let envPasswordPapper = env
+        ::var("IP_WITH_PORT")
+        .expect("Error while reding IP_WITH_PORT variable:");
 
     //Tries to connect to a database
     println!("{} - Connecting to databse", getCurrentTimeStr());
@@ -55,7 +60,11 @@ async fn main() -> std::io::Result<()> {
                 println!("{} - {}", getCurrentTimeStr(), format!("Opened key.pem").fg::<Green>());
             }
             Err(e) => {
-                println!("{} - {}", getCurrentTimeStr(), format!("Error while opening key.pem: {}", e).fg::<Red>());
+                println!(
+                    "{} - {}",
+                    getCurrentTimeStr(),
+                    format!("Error while opening key.pem: {}", e).fg::<Red>()
+                );
                 return Ok(());
             }
         }
@@ -65,13 +74,18 @@ async fn main() -> std::io::Result<()> {
                 println!("{} - {}", getCurrentTimeStr(), format!("Opened cert.pem").fg::<Green>());
             }
             Err(e) => {
-                println!("{} - {}", getCurrentTimeStr(), format!("Error while opening cert.pem: {}", e).fg::<Red>());
+                println!(
+                    "{} - {}",
+                    getCurrentTimeStr(),
+                    format!("Error while opening cert.pem: {}", e).fg::<Red>()
+                );
                 return Ok(());
             }
         }
     } else {
         println!(
-            "{} - Did not found TLS keys (key.pem, cert.pem) {}", getCurrentTimeStr(),
+            "{} - Did not found TLS keys (key.pem, cert.pem) {}",
+            getCurrentTimeStr(),
             "Consider using TLS encryption for safer communication".yellow()
         );
     }
@@ -81,21 +95,31 @@ async fn main() -> std::io::Result<()> {
             .app_data(
                 web::Data::new(shared::structs::AppState {
                     version: VERSION.to_string(),
+                    pepper: envPasswordPapper.clone(),
                     pool: pool.clone(),
                 })
             )
             .service(index)
-            .service(handlers::User::userGet::userGetAll)
+            .service(handlers::User::userGet::getAllUsers)
+            .service(handlers::User::userPost::postUser)
     );
 
     if certExists {
-        println!("{} - {}", getCurrentTimeStr(), format!("Server starting with {}", envIpWithPort).fg::<Green>());
+        println!(
+            "{} - {}",
+            getCurrentTimeStr(),
+            format!("Server starting with {}", envIpWithPort).fg::<Green>()
+        );
         return httpServer
             .bind_openssl(&envIpWithPort, sslBuilder)
             .expect("Error while setting address with port/openssl: ")
             .run().await;
     } else {
-        println!("{} - {}", getCurrentTimeStr(), format!("Server starting with {}", envIpWithPort).fg::<Green>());
+        println!(
+            "{} - {}",
+            getCurrentTimeStr(),
+            format!("Server starting with {}", envIpWithPort).fg::<Green>()
+        );
         return httpServer
             .bind(&envIpWithPort)
             .expect("Error while setting address with port: ")
