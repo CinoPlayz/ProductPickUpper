@@ -4,7 +4,9 @@ use owo_colors::{ colors::{ Green, Red }, OwoColorize };
 use sqlx::MySqlPool;
 use actix_web::{ get, web, App, HttpRequest, HttpServer, Responder };
 use openssl::ssl::{ SslAcceptor, SslFiletype, SslMethod };
-use crate::shared::chrono::getCurrentTimeStr;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::{Config, SwaggerUi};
+use crate::shared::{chrono::getCurrentTimeStr, structs::structsApp::ApiDoc};
 mod handlers;
 mod shared;
 
@@ -93,11 +95,16 @@ async fn main() -> std::io::Result<()> {
     let httpServer = HttpServer::new(move ||
         App::new()
             .app_data(
-                web::Data::new(shared::structs::AppState {
+                web::Data::new(shared::structs::structsApp::AppState {
                     version: VERSION.to_string(),
                     pepper: envPasswordPapper.clone(),
                     pool: pool.clone(),
                 })
+            )
+            .service(
+                SwaggerUi::new("/docs/{_:.*}")
+                    .url("/docs/openapi.json", ApiDoc::openapi())
+                    .config(Config::default().use_base_layout().filter(true)),
             )
             .service(index)
             .service(handlers::User::userGet::getAllUsers)

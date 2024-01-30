@@ -1,15 +1,26 @@
-use chrono::NaiveDateTime;
 use sqlx::error::DatabaseError;
 use sqlx::{ MySql, Pool };
 use serde::Deserialize;
 use serde::Serialize;
 use regex::Regex;
+use utoipa::OpenApi;
+use crate::handlers::User::userGet;
+
+use super::structsHandler::User;
+
 
 pub struct AppState {
     pub version: String,
     pub pepper: String,
     pub pool: Pool<MySql>,
 }
+
+#[derive(OpenApi)]
+#[openapi(
+    info(title = "Product Pick Upper"),
+)]
+#[openapi(paths(userGet::getAllUsers), components(schemas(User)))]
+pub struct ApiDoc;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PickUpError {
@@ -55,33 +66,4 @@ impl From<&dyn DatabaseError> for PickUpError {
             }
         }
     }
-}
-
-//UserRoles
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct UserRole {
-    pub Id: String,
-    pub Role: String,
-    pub Description: String,
-}
-
-//User
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct User {
-    pub Id: String,
-    pub Username: String,
-    pub Name: String,
-    pub Surname: String,
-    pub Password: String,
-    pub DateCreated: NaiveDateTime,
-    pub FK_UserRole: String,
-}
-
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct UserCreate {
-    pub Username: String,
-    pub Name: String,
-    pub Surname: String,
-    pub Password: String,
-    pub FK_UserRole: String,
 }

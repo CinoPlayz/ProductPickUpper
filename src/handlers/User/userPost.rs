@@ -1,6 +1,7 @@
 use actix_web::{ post, web, HttpResponse };
 use crate::shared::random::getRandomStr;
-use crate::shared::structs::{ AppState, PickUpError, UserCreate };
+use crate::shared::structs::structsApp::{AppState, PickUpError};
+use crate::shared::structs::structsHandler::UserCreate;
 use crate::shared::password::getHashedPassword;
 
 #[post("user")]

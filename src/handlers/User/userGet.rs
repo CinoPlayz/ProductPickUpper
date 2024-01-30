@@ -1,6 +1,13 @@
 use actix_web::{ get, web, HttpResponse };
-use crate::shared::structs::{AppState, User};
+use crate::shared::structs::structsApp::AppState;
+use crate::shared::structs::structsHandler::User;
 
+#[utoipa::path(
+   context_path = "/",
+   responses(
+       (status = 200, description = "Returns all users", body = User)
+   )
+)]
 #[get("user")]
 pub async fn getAllUsers(data: web::Data<AppState>) -> HttpResponse {
    
