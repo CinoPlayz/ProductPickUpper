@@ -23,7 +23,7 @@ pub struct User {
     pub FK_UserRole: String,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct UserCreate {
     pub Username: String,
     pub Name: String,

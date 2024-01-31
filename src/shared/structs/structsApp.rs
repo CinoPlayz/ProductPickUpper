@@ -4,9 +4,9 @@ use serde::Deserialize;
 use serde::Serialize;
 use regex::Regex;
 use utoipa::{ OpenApi, ToSchema };
-use crate::handlers::User::userGet;
+use crate::handlers::User::{userGet, userPost};
 
-use super::structsHandler::User;
+use super::structsHandler::{User, UserCreate};
 
 pub struct AppState {
     pub version: String,
@@ -16,10 +16,10 @@ pub struct AppState {
 
 #[derive(OpenApi)]
 #[openapi(info(title = "Product Pick Upper"))]
-#[openapi(paths(userGet::getAllUsers), components(schemas(User, PickUpError)))]
+#[openapi(paths(userGet::getAllUsers, userPost::postUser), components(schemas(User, UserCreate, PickUpError, PickUpErrorCode)))]
 pub struct ApiDoc;
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub enum PickUpErrorCode {
     Other = 0,
     Check = 1,
@@ -29,7 +29,7 @@ pub enum PickUpErrorCode {
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct PickUpError {
-    pub Code: u32,
+    pub Code: PickUpErrorCode,
     pub Message: String,
 }
 
@@ -37,7 +37,7 @@ impl From<&dyn DatabaseError> for PickUpError {
     fn from(e: &dyn DatabaseError) -> Self {
         if e.is_check_violation() {
             Self {
-                Code: PickUpErrorCode::Check as u32,
+                Code: PickUpErrorCode::Check,
                 Message: e.message().to_string(),
             }
         } else if e.is_foreign_key_violation() {
@@ -45,13 +45,13 @@ impl From<&dyn DatabaseError> for PickUpError {
             match regex.captures(e.message()).map(|caps| caps.extract()) {
                 None => {
                     Self {
-                        Code: PickUpErrorCode::ForeignKey as u32,
+                        Code: PickUpErrorCode::ForeignKey,
                         Message: format!("Foreign key constraint fails at unknown column"),
                     }
                 }
                 Some((_, [column])) => {
                     Self {
-                        Code: PickUpErrorCode::ForeignKey as u32,
+                        Code: PickUpErrorCode::ForeignKey,
                         Message: format!(
                             "Foreign key constraint fails at {} column",
                             column.replace("`", "")
@@ -61,12 +61,12 @@ impl From<&dyn DatabaseError> for PickUpError {
             }
         } else if e.is_unique_violation() {
             Self {
-                Code: PickUpErrorCode::Unique as u32,
+                Code: PickUpErrorCode::Unique,
                 Message: e.message().to_string(),
             }
         } else {
             Self {
-                Code: PickUpErrorCode::Other as u32,
+                Code: PickUpErrorCode::Other,
                 Message: e.message().to_string(),
             }
         }

@@ -50,7 +50,7 @@ async fn main() -> std::io::Result<()> {
     let mut sslBuilder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).expect(
         "Error while creating ssl builder: "
     );
-    if Path::new("key.pem").exists() && Path::new("cert.pem").exists() {
+    if Path::new("config/key.pem").exists() && Path::new("config/cert.pem").exists() {
         println!("{} - Found TLS keys (key.pem, cert.pem)", getCurrentTimeStr());
         certExists = true;
         // load TLS keys

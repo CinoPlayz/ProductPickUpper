@@ -4,6 +4,13 @@ use crate::shared::structs::structsApp::{AppState, PickUpError};
 use crate::shared::structs::structsHandler::UserCreate;
 use crate::shared::password::getHashedPassword;
 
+#[utoipa::path(
+   context_path = "/",
+   responses(
+       (status = 200, description = "Inserted user", body = String),
+       (status = 400, description = "Bad Request", body = PickUpError)
+   )
+)]
 #[post("user")]
 pub async fn postUser(data: web::Data<AppState>, info: web::Json<UserCreate>) -> HttpResponse {
    let hashedPassword = getHashedPassword(
