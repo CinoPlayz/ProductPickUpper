@@ -7,8 +7,9 @@ use utoipa::ToSchema;
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UserRole {
     pub Id: String,
+    pub PermissionLevel: i8,
     pub Role: String,
-    pub Description: String,
+    pub Description: Option<String>,
 }
 
 //User

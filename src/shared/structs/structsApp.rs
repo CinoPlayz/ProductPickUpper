@@ -12,6 +12,14 @@ pub struct AppState {
     pub version: String,
     pub pepper: String,
     pub pool: Pool<MySql>,
+    pub createRoot: bool,
+    pub hashingParameters: HashingParameters
+}
+
+pub struct HashingParameters{
+    pub mem_cost: u32,
+    pub time_cost: u32,
+    pub lanes: u32
 }
 
 #[derive(OpenApi)]

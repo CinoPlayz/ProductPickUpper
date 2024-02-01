@@ -16,7 +16,8 @@ pub async fn postUser(data: web::Data<AppState>, info: web::Json<UserCreate>) ->
    let hashedPassword = getHashedPassword(
       &info.Password,
       &data.pepper,
-      &getRandomStr(64)
+      &getRandomStr(64),
+      &data.hashingParameters
    ).unwrap();
 
    let query: Result<_, sqlx::Error> = sqlx::query!(
@@ -34,7 +35,7 @@ pub async fn postUser(data: web::Data<AppState>, info: web::Json<UserCreate>) ->
          let errorPickUp: PickUpError = e.as_database_error().unwrap().into();
          return HttpResponse::BadRequest().content_type("application/json").json(errorPickUp)
       }
-      Ok(_) => {return HttpResponse::Ok().content_type("application/json").json("")}, 
+      Ok(_) => {return HttpResponse::Ok().content_type("application/json").finish()}, 
    }
 
 }

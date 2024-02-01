@@ -1,20 +1,62 @@
-use argon2::{self, Config, Variant, Version};
+use argon2::{ self, Config, Variant, Version };
+use sqlx::{ MySql, Pool };
 
-pub fn getHashedPassword(password: &str, papper: &str, salt: &str) -> Result<String, argon2::Error>{
+use super::structs::structsApp::{ HashingParameters, PickUpError };
+use crate::shared::random::getRandomStr;
+use crate::shared::structs::structsHandler::UserRole;
+
+pub fn getHashedPassword(
+    password: &str,
+    papper: &str,
+    salt: &str,
+    hashingParameters: &HashingParameters
+) -> Result<String, argon2::Error> {
     let config = Config {
         variant: Variant::Argon2id,
         version: Version::Version13,
-        mem_cost: 65536,
-        time_cost: 10,
-        lanes: 4,
+        mem_cost: hashingParameters.mem_cost,
+        time_cost: hashingParameters.time_cost,
+        lanes: hashingParameters.lanes,
         secret: papper.as_bytes(),
         ad: &[],
-        hash_length: 294
+        hash_length: 290,
     };
-    
-   return argon2::hash_encoded(password.as_bytes(), salt.as_bytes(), &config);
+
+    return argon2::hash_encoded(password.as_bytes(), salt.as_bytes(), &config);
 }
 
-pub fn isPasswordCorrect(password: &str, hash: &str, papper: &str) -> Result<bool, argon2::Error>{
-    return argon2::verify_encoded_ext(hash, password.as_bytes(), papper.as_bytes(), &[])
+pub fn isPasswordCorrect(password: &str, hash: &str, papper: &str) -> Result<bool, argon2::Error> {
+    return argon2::verify_encoded_ext(hash, password.as_bytes(), papper.as_bytes(), &[]);
+}
+
+pub async fn createRoot(
+    pool: &Pool<MySql>,
+    papper: &str,
+    hashingParameters: &HashingParameters
+) -> Result<(), PickUpError> {
+    let userRoleHighestPer = sqlx
+        ::query_as!(UserRole, "SELECT * FROM UserRole ORDER BY PermissionLevel DESC LIMIT 1")
+        .fetch_all(pool).await
+        .unwrap();
+
+    let query: Result<_, sqlx::Error> = sqlx
+        ::query!(
+            "INSERT INTO User ( Username , Name, Surname, Password, FK_UserRole) VALUES(?, ?, ?, ?, ?)",
+            "root",
+            "",
+            "",
+            getHashedPassword("admin", papper, &getRandomStr(64), hashingParameters).unwrap(),
+            userRoleHighestPer[0].Id
+        )
+        .execute(pool).await;
+
+    match query {
+        Err(e) => {
+            let errorPickUp: PickUpError = e.as_database_error().unwrap().into();
+            return Err(errorPickUp);
+        }
+        Ok(_) => {
+            return Ok(());
+        }
+    }
 }

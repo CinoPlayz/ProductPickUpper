@@ -6,7 +6,7 @@ use actix_web::{ get, web, App, HttpRequest, HttpServer, Responder };
 use openssl::ssl::{ SslAcceptor, SslFiletype, SslMethod };
 use utoipa::OpenApi;
 use utoipa_swagger_ui::{Config, SwaggerUi};
-use crate::shared::{chrono::getCurrentTimeStr, structs::structsApp::ApiDoc};
+use crate::shared::{chrono::getCurrentTimeStr, password::createRoot, structs::structsApp::ApiDoc, structs::structsApp::AppState, structs::structsApp::HashingParameters};
 mod handlers;
 mod shared;
 
@@ -37,12 +37,74 @@ async fn main() -> std::io::Result<()> {
         ::var("IP_WITH_PORT")
         .expect("Error while reding IP_WITH_PORT variable:");
 
+    println!("{} - Reading CREATE_ROOT from .env file", getCurrentTimeStr());
+    let envCreateRoot = env
+        ::var("CREATE_ROOT")
+        .expect("Error while reding CREATE_ROOT variable:")
+        .parse::<bool>().expect("Error while converting CREATE_ROOT to bool:");
+   
+    println!("{} - Reading MEM_COST from .env file", getCurrentTimeStr());
+    let envMemCost = env
+        ::var("MEM_COST")
+        .expect("Error while reding MEM_COST variable:")
+        .parse::<u32>().expect("Error while converting MEM_COST to u32:");
+
+    println!("{} - Reading TIME_COST from .env file", getCurrentTimeStr());
+    let envTimeCost = env
+        ::var("TIME_COST")
+        .expect("Error while reding TIME_COST variable:")
+        .parse::<u32>().expect("Error while converting TIME_COST to u32:");
+
+    println!("{} - Reading LANES from .env file", getCurrentTimeStr());
+    let envLanes = env
+        ::var("LANES")
+        .expect("Error while reding LANES variable:")
+        .parse::<u32>().expect("Error while converting envLanes to u32:");
+
+    let hashingParameters = HashingParameters {
+        mem_cost: envMemCost.clone(),
+        time_cost: envTimeCost.clone(),
+        lanes: envLanes.clone()
+    };
+
+
     //Tries to connect to a database
     println!("{} - Connecting to databse", getCurrentTimeStr());
     let pool = MySqlPool::connect(&envDBUrl).await.expect(
         "Error while trying to connect to database"
     );
     println!("{} - {}", getCurrentTimeStr(), format!("Connected to databse").fg::<Green>());
+
+    //Inserts root if CREATE_ROOT is true
+    if envCreateRoot{
+        println!(
+            "{} - {}",
+            getCurrentTimeStr(),
+            "Inserting root user (this might take some time)"
+        );
+
+        match createRoot(&pool, &envPasswordPapper, &hashingParameters).await  {
+            Err(e) => {
+                println!(
+                    "{} - {}",
+                    getCurrentTimeStr(),
+                    format!("Error while inserting root user: {}", e.Message).fg::<Red>()
+                );
+                return Ok(());
+            },
+            Ok(_) => {
+                println!(
+                    "{} - {} {}",
+                    getCurrentTimeStr(),
+                    format!("Inserted root user (Password: admin)").fg::<Green>(),
+                    format!("Use this environment variable only when seting up the server!!! (set it to false when done)").fg::<Red>()
+                );
+            }            
+        }
+            
+        
+    }
+
 
     //Tries to find TLS keys for secure communication
     println!("{} - Finding TLS keys", getCurrentTimeStr());
@@ -95,10 +157,16 @@ async fn main() -> std::io::Result<()> {
     let httpServer = HttpServer::new(move ||
         App::new()
             .app_data(
-                web::Data::new(shared::structs::structsApp::AppState {
+                web::Data::new(AppState {
                     version: VERSION.to_string(),
                     pepper: envPasswordPapper.clone(),
                     pool: pool.clone(),
+                    createRoot: envCreateRoot.clone(),
+                    hashingParameters: HashingParameters {
+                        mem_cost: envMemCost.clone(),
+                        time_cost: envTimeCost.clone(),
+                        lanes: envLanes.clone()
+                    }
                 })
             )
             .service(

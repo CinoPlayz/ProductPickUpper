@@ -10,8 +10,10 @@ USE ProductPickUpper;
 
 CREATE TABLE `UserRole`(
     `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-    `Role` VARCHAR(36),
-    `Description` TEXT
+	`PermissionLevel` TINYINT DEFAULT 0 NOT NULL, /*0-User, 1-Supervisor, 2-admin*/
+    `Role` VARCHAR(36) NOT NULL,
+    `Description` TEXT,
+	CONSTRAINT CHK_PermissionLevel CHECK (`PermissionLevel` BETWEEN 0 AND 2)
 ) ENGINE=InnoDB;
 
 CREATE TABLE `User`(
@@ -117,10 +119,11 @@ CREATE TABLE `ScheduledPickUp`(
 	FOREIGN KEY (`FK_User`) REFERENCES `User`(`Id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-INSERT INTO `UserRole`(`Role`, `Description`) VALUES 
-('admin', 'Can view/create/edit/delete everything in the database'),
-('user', 'Can view/create/edit/delete only on pickup table'),
-('supervisor', 'Everything in user + can view/create/edit/delete scheduled pickups, customers and products');
+INSERT INTO `UserRole`(`Role`, `PermissionLevel`, `Description`) VALUES 
+('admin', 2, 'Can view/create/edit/delete everything in the database'),
+('supervisor', 1, 'Everything in user + can view/create/edit/delete scheduled pickups, customers and products'),
+('user', 0, 'Can view/create/edit/delete only on pickup table');
+
 
 INSERT INTO `MetricUnit`(`Unit`, `Abbreviation`) VALUES 
 ('Litre', 'L'),
