@@ -22,8 +22,7 @@ pub async fn login(data: web::Data<AppState>, info: web::Json<UserLogin>) -> Htt
         Err(e) => {
             match e.as_database_error(){
                None => {
-                  let errorPickUpDatabase= PickUpError{ Code: PickUpErrorCode::IncorectCredentials, Message: PickUpErrorCode::IncorectCredentials.to_string() };
-                  return HttpResponse::BadRequest().content_type("application/json").json(errorPickUpDatabase);
+                  return HttpResponse::BadRequest().content_type("application/json").json(PickUpError::new(PickUpErrorCode::IncorectCredentials));
                }
                Some(errorDatabase) => {
                   let errorPickUpDatabase: PickUpError = errorDatabase.into();
@@ -43,11 +42,7 @@ pub async fn login(data: web::Data<AppState>, info: web::Json<UserLogin>) -> Htt
                Ok(isPasswordCorrect) => {
 
                   if !isPasswordCorrect{
-                     let errorPickUpCredentials: PickUpError = PickUpError{                     
-                        Code: PickUpErrorCode::IncorectCredentials,
-                        Message: PickUpErrorCode::IncorectCredentials.to_string()                     
-                     };
-                     return HttpResponse::BadRequest().content_type("application/json").json(errorPickUpCredentials);
+                     return HttpResponse::BadRequest().content_type("application/json").json(PickUpError::new(PickUpErrorCode::IncorectCredentials));
                   }
                   else{
                      

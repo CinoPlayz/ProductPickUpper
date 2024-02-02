@@ -3,7 +3,8 @@ use sqlx::{ MySql, Pool };
 use serde::Deserialize;
 use serde::Serialize;
 use regex::Regex;
-use utoipa::{ OpenApi, ToSchema };
+use utoipa::openapi::security::{Http, HttpAuthScheme, SecurityScheme};
+use utoipa::{ Modify, OpenApi, ToSchema };
 use crate::handlers::User::{userGet, userPost};
 use crate::handlers::Token::login;
 
@@ -23,10 +24,6 @@ pub struct HashingParameters{
     pub lanes: u32
 }
 
-#[derive(OpenApi)]
-#[openapi(info(title = "Product Pick Upper"))]
-#[openapi(paths(userGet::getAllUsers, userPost::postUser, login::login), components(schemas(User, UserCreate, UserLogin, TokenOnly, PickUpError, PickUpErrorCode)))]
-pub struct ApiDoc;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub enum PickUpErrorCode {
@@ -36,6 +33,8 @@ pub enum PickUpErrorCode {
     Unique = 3,
     HashingError = 4,
     IncorectCredentials = 5,
+    Unauthorized = 6,
+    InternalServerError = 7,
 }
 
 
@@ -43,6 +42,7 @@ impl PickUpErrorCode  {
     pub fn to_string(&self) -> String {
         match self {
             PickUpErrorCode::IncorectCredentials => format!("Password or username is incorrect"),
+            PickUpErrorCode::Unauthorized => format!("Token is insufficient"),
             _  => format!(""),
         }
     }
@@ -52,6 +52,26 @@ impl PickUpErrorCode  {
 pub struct PickUpError {
     pub Code: PickUpErrorCode,
     pub Message: String,
+}
+
+impl PickUpError {
+    pub fn new(pickupErrorCode: PickUpErrorCode) -> PickUpError {
+        return match pickupErrorCode {
+            PickUpErrorCode::IncorectCredentials => PickUpError{
+                Code:  PickUpErrorCode::IncorectCredentials,
+                Message:  PickUpErrorCode::IncorectCredentials.to_string()
+            },
+            PickUpErrorCode::Unauthorized => PickUpError{
+                Code:  PickUpErrorCode::Unauthorized,
+                Message:  PickUpErrorCode::Unauthorized.to_string()
+            },
+
+            _ => PickUpError{
+                Code:  PickUpErrorCode::Other,
+                Message:  PickUpErrorCode::Other.to_string()
+            }
+        }
+    }
 }
 
 impl From<&dyn DatabaseError> for PickUpError {
@@ -112,3 +132,32 @@ pub struct GeneratedToken{
     pub Token: String,
     pub SHA256ofToken: String,
 }
+
+#[derive(Debug, PartialEq)]
+pub enum PermissionLevel {
+    User = 0,
+    Supervisor = 1,
+    Admin = 2
+}
+
+pub struct PermissionLevelStruct {
+    pub PermissionLevel: i8
+}
+
+#[derive(OpenApi)]
+#[openapi(info(title = "Product Pick Upper"))]
+#[openapi(paths(userGet::getAllUsers, userPost::postUser, login::login), components(schemas(User, UserCreate, UserLogin, TokenOnly, PickUpError, PickUpErrorCode)), modifiers(&SecurityAddon))]
+pub struct ApiDoc;
+
+struct SecurityAddon;
+
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        let components: &mut utoipa::openapi::Components = openapi.components.as_mut().unwrap(); // we can unwrap safely since there already is components registered.
+        components.add_security_scheme(
+            "bearerAuth",
+            SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)),
+        )
+    }
+}
+

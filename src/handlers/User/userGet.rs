@@ -1,23 +1,46 @@
 use actix_web::{ get, web, HttpResponse };
-use crate::shared::structs::structsApp::AppState;
+use crate::shared::auth::getPermissionLevelHttp;
+use crate::shared::structs::structsApp::{AppState, PermissionLevel, PickUpError};
 use crate::shared::structs::structsHandler::User;
+use crate::shared::structs::structsApp::PickUpErrorCode;
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
 
 #[utoipa::path(
    context_path = "/",
    responses(
-       (status = 200, description = "Returns all users", body = User)
-   )
+       (status = 200, description = "Returns all users", body = User),
+       (status = 401, description = "Unauthorized", body = PickUpError),
+       (status = 500, description = "Internal Server Error", body = PickUpError)
+   ),
+   security(
+      ("bearerAuth" = [])
+  )   
 )]
 #[get("user")]
 pub async fn getAllUsers(data: web::Data<AppState>, auth: BearerAuth) -> HttpResponse {
-   let token = auth.token().to_string();
-   
-   let users = sqlx::query_as!(User, "SELECT * FROM User")
-    .fetch_all(&data.pool).await.unwrap();
+   let token = auth.token();
 
-       HttpResponse::Ok()
-        .content_type("application/json")
-        .json(&users)
+   match getPermissionLevelHttp(token, &data.pool).await {
+      Err(e) => {
+         return e;
+      },
+      Ok(userPermissionLevel) => {
+         if userPermissionLevel != PermissionLevel::Admin{
+            HttpResponse::Unauthorized().content_type("application/json").json(PickUpError::new(PickUpErrorCode::Unauthorized))
+         }
+         else{
+            let users = sqlx::query_as!(User, "SELECT * FROM User")
+            .fetch_all(&data.pool).await.unwrap();
+     
+            HttpResponse::Ok()
+             .content_type("application/json")
+             .json(&users)
+         }
+
+
+         
+      }
+   }  
+   
 }

@@ -154,6 +154,7 @@ async fn main() -> std::io::Result<()> {
         );
     }
 
+    //TODO: Custom error reporting using PickUpErrorStruct
     let httpServer = HttpServer::new(move ||
         App::new()
             .app_data(
