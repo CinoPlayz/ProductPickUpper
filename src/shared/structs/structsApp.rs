@@ -5,8 +5,9 @@ use serde::Serialize;
 use regex::Regex;
 use utoipa::{ OpenApi, ToSchema };
 use crate::handlers::User::{userGet, userPost};
+use crate::handlers::Token::login;
 
-use super::structsHandler::{User, UserCreate};
+use super::structsHandler::{TokenOnly, User, UserCreate, UserLogin};
 
 pub struct AppState {
     pub version: String,
@@ -24,7 +25,7 @@ pub struct HashingParameters{
 
 #[derive(OpenApi)]
 #[openapi(info(title = "Product Pick Upper"))]
-#[openapi(paths(userGet::getAllUsers, userPost::postUser), components(schemas(User, UserCreate, PickUpError, PickUpErrorCode)))]
+#[openapi(paths(userGet::getAllUsers, userPost::postUser, login::login), components(schemas(User, UserCreate, UserLogin, TokenOnly, PickUpError, PickUpErrorCode)))]
 pub struct ApiDoc;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -33,6 +34,18 @@ pub enum PickUpErrorCode {
     Check = 1,
     ForeignKey = 2,
     Unique = 3,
+    HashingError = 4,
+    IncorectCredentials = 5,
+}
+
+
+impl PickUpErrorCode  {
+    pub fn to_string(&self) -> String {
+        match self {
+            PickUpErrorCode::IncorectCredentials => format!("Password or username is incorrect"),
+            _  => format!(""),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -79,4 +92,23 @@ impl From<&dyn DatabaseError> for PickUpError {
             }
         }
     }
+}
+
+
+impl From<argon2::Error> for PickUpError {
+    fn from(e: argon2::Error) -> Self {
+            Self {
+                Code: PickUpErrorCode::HashingError,
+                Message: format!(
+                    "Error while hashing password {}",
+                    e.to_string()
+                )
+            }
+       
+    }
+}
+
+pub struct GeneratedToken{
+    pub Token: String,
+    pub SHA256ofToken: String,
 }

@@ -7,7 +7,7 @@ use crate::shared::password::getHashedPassword;
 #[utoipa::path(
    context_path = "/",
    responses(
-       (status = 200, description = "Inserted user", body = String),
+       (status = 201, description = "Created user", body = String),
        (status = 400, description = "Bad Request", body = PickUpError)
    )
 )]
@@ -35,7 +35,7 @@ pub async fn postUser(data: web::Data<AppState>, info: web::Json<UserCreate>) ->
          let errorPickUp: PickUpError = e.as_database_error().unwrap().into();
          return HttpResponse::BadRequest().content_type("application/json").json(errorPickUp)
       }
-      Ok(_) => {return HttpResponse::Ok().content_type("application/json").finish()}, 
+      Ok(_) => {return HttpResponse::Created().content_type("application/json").finish()}, 
    }
 
 }

@@ -177,6 +177,7 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(handlers::User::userGet::getAllUsers)
             .service(handlers::User::userPost::postUser)
+            .service(handlers::Token::login::login)
     );
 
     if certExists {
