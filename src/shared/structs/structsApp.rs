@@ -3,52 +3,81 @@ use sqlx::{ MySql, Pool };
 use serde::Deserialize;
 use serde::Serialize;
 use regex::Regex;
-use utoipa::openapi::security::{Http, HttpAuthScheme, SecurityScheme};
+use utoipa::openapi::security::{ Http, HttpAuthScheme, SecurityScheme };
 use utoipa::{ Modify, OpenApi, ToSchema };
-use crate::handlers::User::{userGet, userPost};
+use crate::handlers::User::{ userGet, userPost };
 use crate::handlers::Token::login;
+use derive_more::Display;
 
-use super::structsHandler::{TokenOnly, User, UserCreate, UserLogin};
+use super::structsHandler::{ TokenOnly, User, UserCreate, UserLogin };
 
 pub struct AppState {
     pub version: String,
     pub pepper: String,
     pub pool: Pool<MySql>,
     pub createRoot: bool,
-    pub hashingParameters: HashingParameters
+    pub hashingParameters: HashingParameters,
 }
 
-pub struct HashingParameters{
+pub struct HashingParameters {
     pub mem_cost: u32,
     pub time_cost: u32,
-    pub lanes: u32
+    pub lanes: u32,
 }
 
-
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema, Display)]
 pub enum PickUpErrorCode {
+    #[display(fmt = "Other")]
     Other = 0,
+
+    #[display(fmt = "Check")]
     Check = 1,
+
+    #[display(fmt = "ForeignKey")]
     ForeignKey = 2,
+
+    #[display(fmt = "Unique")]
     Unique = 3,
-    HashingError = 4,
+
+    #[display(fmt = "Hashing")]
+    Hashing = 4,
+
+    #[display(fmt = "IncorectCredentials")]
     IncorectCredentials = 5,
+
+    #[display(fmt = "Unauthorized")]
     Unauthorized = 6,
+
+    #[display(fmt = "InternalServerError")]
     InternalServerError = 7,
+
+    #[display(fmt = "BadRequest")]
+    BadRequest = 8,
+
+    #[display(fmt = "Timeout")]
+    Timeout = 9,
 }
 
-
-impl PickUpErrorCode  {
+//Default to string
+impl PickUpErrorCode {
     pub fn to_string(&self) -> String {
         match self {
+            PickUpErrorCode::Other => format!("Other type of error"),
+            PickUpErrorCode::Check => format!("Check constraint has failed"),
+            PickUpErrorCode::ForeignKey => format!("Foreign key constraint has failed"),
+            PickUpErrorCode::Unique => format!("Unique constraint has failed"),
+            PickUpErrorCode::Hashing => format!("Hashing has failed"),
             PickUpErrorCode::IncorectCredentials => format!("Password or username is incorrect"),
             PickUpErrorCode::Unauthorized => format!("Token is insufficient"),
-            _  => format!(""),
+            PickUpErrorCode::InternalServerError => format!("Internal server error"),
+            PickUpErrorCode::BadRequest => format!("Bad request error"),
+            PickUpErrorCode::Timeout => format!("Timeout error"),
         }
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema, Display)]
+#[display(fmt = "Code: {} Message: {}", Code, Message)]
 pub struct PickUpError {
     pub Code: PickUpErrorCode,
     pub Message: String,
@@ -57,20 +86,23 @@ pub struct PickUpError {
 impl PickUpError {
     pub fn new(pickupErrorCode: PickUpErrorCode) -> PickUpError {
         return match pickupErrorCode {
-            PickUpErrorCode::IncorectCredentials => PickUpError{
-                Code:  PickUpErrorCode::IncorectCredentials,
-                Message:  PickUpErrorCode::IncorectCredentials.to_string()
-            },
-            PickUpErrorCode::Unauthorized => PickUpError{
-                Code:  PickUpErrorCode::Unauthorized,
-                Message:  PickUpErrorCode::Unauthorized.to_string()
-            },
+            PickUpErrorCode::IncorectCredentials =>
+                PickUpError {
+                    Code: PickUpErrorCode::IncorectCredentials,
+                    Message: PickUpErrorCode::IncorectCredentials.to_string(),
+                },
+            PickUpErrorCode::Unauthorized =>
+                PickUpError {
+                    Code: PickUpErrorCode::Unauthorized,
+                    Message: PickUpErrorCode::Unauthorized.to_string(),
+                },
 
-            _ => PickUpError{
-                Code:  PickUpErrorCode::Other,
-                Message:  PickUpErrorCode::Other.to_string()
-            }
-        }
+            _ =>
+                PickUpError {
+                    Code: PickUpErrorCode::Other,
+                    Message: PickUpErrorCode::Other.to_string(),
+                },
+        };
     }
 }
 
@@ -114,21 +146,16 @@ impl From<&dyn DatabaseError> for PickUpError {
     }
 }
 
-
 impl From<argon2::Error> for PickUpError {
     fn from(e: argon2::Error) -> Self {
-            Self {
-                Code: PickUpErrorCode::HashingError,
-                Message: format!(
-                    "Error while hashing password {}",
-                    e.to_string()
-                )
-            }
-       
+        Self {
+            Code: PickUpErrorCode::Hashing,
+            Message: format!("Error while hashing password {}", e.to_string()),
+        }
     }
 }
 
-pub struct GeneratedToken{
+pub struct GeneratedToken {
     pub Token: String,
     pub SHA256ofToken: String,
 }
@@ -137,16 +164,21 @@ pub struct GeneratedToken{
 pub enum PermissionLevel {
     User = 0,
     Supervisor = 1,
-    Admin = 2
+    Admin = 2,
 }
 
 pub struct PermissionLevelStruct {
-    pub PermissionLevel: i8
+    pub PermissionLevel: i8,
 }
 
+//TODO: Finish Bearer tokens
 #[derive(OpenApi)]
 #[openapi(info(title = "Product Pick Upper"))]
-#[openapi(paths(userGet::getAllUsers, userPost::postUser, login::login), components(schemas(User, UserCreate, UserLogin, TokenOnly, PickUpError, PickUpErrorCode)), modifiers(&SecurityAddon))]
+#[openapi(
+    paths(userGet::getAllUsers, userPost::postUser, login::login),
+    components(schemas(User, UserCreate, UserLogin, TokenOnly, PickUpError, PickUpErrorCode)),
+    modifiers(&SecurityAddon)
+)]
 pub struct ApiDoc;
 
 struct SecurityAddon;
@@ -156,8 +188,7 @@ impl Modify for SecurityAddon {
         let components: &mut utoipa::openapi::Components = openapi.components.as_mut().unwrap(); // we can unwrap safely since there already is components registered.
         components.add_security_scheme(
             "bearerAuth",
-            SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)),
+            SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer))
         )
     }
 }
-

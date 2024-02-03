@@ -44,3 +44,45 @@ pub async fn getAllUsers(data: web::Data<AppState>, auth: BearerAuth) -> HttpRes
    }  
    
 }
+
+
+#[utoipa::path(
+   context_path = "/",
+   responses(
+       (status = 200, description = "Returns all users", body = User),
+       (status = 401, description = "Unauthorized", body = PickUpError),
+       (status = 500, description = "Internal Server Error", body = PickUpError)
+   ),
+   security(
+      ("bearerAuth" = [])
+  )   
+)]
+#[get("user/{id}/")]
+pub async fn getUserById(data: web::Data<AppState>, auth: BearerAuth, path: web::Path<String>) -> HttpResponse {
+   let token = auth.token();
+
+   match getPermissionLevelHttp(token, &data.pool).await {
+      Err(e) => {
+         return e;
+      },
+      Ok(userPermissionLevel) => {
+         if userPermissionLevel != PermissionLevel::Admin{
+            HttpResponse::Unauthorized().content_type("application/json").json(PickUpError::new(PickUpErrorCode::Unauthorized))
+         }
+         else{
+            let uuid = path.into_inner();
+
+            let users = sqlx::query_as!(User, "SELECT * FROM User WHERE Id=?", uuid)
+            .fetch_all(&data.pool).await.unwrap();
+     
+            HttpResponse::Ok()
+             .content_type("application/json")
+             .json(&users)
+         }
+
+
+         
+      }
+   }  
+   
+}
