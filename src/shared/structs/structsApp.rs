@@ -3,7 +3,7 @@ use sqlx::{ MySql, Pool };
 use serde::Deserialize;
 use serde::Serialize;
 use regex::Regex;
-use utoipa::openapi::security::{ Http, HttpAuthScheme, SecurityScheme };
+use utoipa::openapi::security::{ HttpAuthScheme, HttpBuilder, SecurityScheme };
 use utoipa::{ Modify, OpenApi, ToSchema };
 use crate::handlers::User::{ userGet, userPost };
 use crate::handlers::Token::login;
@@ -171,12 +171,15 @@ pub struct PermissionLevelStruct {
     pub PermissionLevel: i8,
 }
 
-//TODO: Finish Bearer tokens
 #[derive(OpenApi)]
-#[openapi(info(title = "Product Pick Upper"))]
 #[openapi(
-    paths(userGet::getAllUsers, userPost::postUser, login::login),
-    components(schemas(User, UserCreate, UserLogin, TokenOnly, PickUpError, PickUpErrorCode)),
+    info(title = "Product Pick Upper"),
+    paths(userGet::getAllUsers, userGet::getUserById, userPost::postUser,  login::login),
+    components(schemas(User, UserCreate, UserLogin, TokenOnly, PickUpError, PickUpErrorCode, )),
+    tags(
+        (name = "User", description = "User management endpoints"),
+        (name = "Token", description = "Token management endpoints")
+    ),
     modifiers(&SecurityAddon)
 )]
 pub struct ApiDoc;
@@ -185,10 +188,13 @@ struct SecurityAddon;
 
 impl Modify for SecurityAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-        let components: &mut utoipa::openapi::Components = openapi.components.as_mut().unwrap(); // we can unwrap safely since there already is components registered.
+        let components: &mut utoipa::openapi::Components = openapi.components.as_mut().unwrap(); // we can unwrap safely since there already is components registered.        
         components.add_security_scheme(
             "bearerAuth",
-            SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer))
+            SecurityScheme::Http(
+                HttpBuilder::new().scheme(HttpAuthScheme::Bearer).bearer_format("JWT").build()
+            )
         )
     }
 }
+

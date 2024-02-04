@@ -6,6 +6,7 @@ use crate::shared::structs::structsApp::{AppState, PermissionLevel, PickUpError,
 use crate::shared::structs::structsHandler::UserCreate;
 use crate::shared::password::getHashedPassword;
 
+/// Create a user
 #[utoipa::path(
    context_path = "/",
    responses(
@@ -16,7 +17,8 @@ use crate::shared::password::getHashedPassword;
    ),
    security(
       ("bearerAuth" = [])
-  ) 
+  ),
+  tag="User"
 )]
 #[post("user")]
 pub async fn postUser(data: web::Data<AppState>, info: web::Json<UserCreate>, auth: BearerAuth) -> HttpResponse {

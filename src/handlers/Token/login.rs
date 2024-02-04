@@ -10,7 +10,8 @@ use crate::shared::password::isPasswordCorrect;
         (status = 201, description = "Created token", body = TokenOnly),
         (status = 400, description = "Bad Request", body = PickUpError),
         (status = 500, description = "Internal Server Error", body = PickUpError)
-    )
+    ),
+    tag="Token"
 )]
 #[post("login")]
 pub async fn login(data: web::Data<AppState>, info: web::Json<UserLogin>) -> HttpResponse {

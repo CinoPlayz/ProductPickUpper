@@ -5,7 +5,7 @@ use crate::shared::structs::structsHandler::User;
 use crate::shared::structs::structsApp::PickUpErrorCode;
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
-
+/// Get all users
 #[utoipa::path(
    context_path = "/",
    responses(
@@ -15,7 +15,8 @@ use actix_web_httpauth::extractors::bearer::BearerAuth;
    ),
    security(
       ("bearerAuth" = [])
-  )   
+  ),
+  tag="User" 
 )]
 #[get("user")]
 pub async fn getAllUsers(data: web::Data<AppState>, auth: BearerAuth) -> HttpResponse {
@@ -45,7 +46,7 @@ pub async fn getAllUsers(data: web::Data<AppState>, auth: BearerAuth) -> HttpRes
    
 }
 
-
+/// Get users by Id
 #[utoipa::path(
    context_path = "/",
    responses(
@@ -55,7 +56,8 @@ pub async fn getAllUsers(data: web::Data<AppState>, auth: BearerAuth) -> HttpRes
    ),
    security(
       ("bearerAuth" = [])
-  )   
+  ),
+  tag="User"
 )]
 #[get("user/{id}/")]
 pub async fn getUserById(data: web::Data<AppState>, auth: BearerAuth, path: web::Path<String>) -> HttpResponse {
