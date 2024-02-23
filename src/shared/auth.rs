@@ -34,7 +34,7 @@ async fn authenticate(token: &str, pool: &Pool<MySql>) -> Result<bool, PickUpErr
     }
 }
 
-//Returns HttpResponse if error occurs while authenticating (No return means authenticated successfully)
+/// Returns HttpResponse if error occurs while authenticating (No return means authenticated successfully)
 pub async fn authenticateHttp(token: &str, pool: &Pool<MySql>) -> Option<HttpResponse> {
     match authenticate(token, pool).await {
         Err(e) => {
@@ -68,6 +68,7 @@ async fn getPermissionLevel(token: &str, pool: &Pool<MySql>) -> Result<Permissio
             {
                 return Err(PickUpError::new(PickUpErrorCode::Unauthorized));
             } else {
+                //If not connection to database can be made
                 return Err(PickUpError {
                     Code: PickUpErrorCode::InternalServerError,
                     Message: e.to_string(),
@@ -84,7 +85,7 @@ async fn getPermissionLevel(token: &str, pool: &Pool<MySql>) -> Result<Permissio
     }
 }
 
-//Authenticates and get permissionLevel
+/// Authenticates and get PermissionLevel or HttpResponse if error
 pub async fn getPermissionLevelHttp(token: &str, pool: &Pool<MySql>) -> Result<PermissionLevel, HttpResponse> {
     match getPermissionLevel(token, pool).await {
         Err(e) => {

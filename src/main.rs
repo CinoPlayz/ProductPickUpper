@@ -219,6 +219,7 @@ async fn main() -> std::io::Result<()> {
             .service(handlers::User::userGet::getAllUsers)
             .service(handlers::User::userGet::getUserById)
             .service(handlers::User::userPost::postUser)
+            .service(handlers::User::userPatch::patchUser)
             .service(handlers::Token::login::login)
     );
 

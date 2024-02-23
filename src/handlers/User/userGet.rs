@@ -59,7 +59,7 @@ pub async fn getAllUsers(data: web::Data<AppState>, auth: BearerAuth) -> HttpRes
   ),
   tag="User"
 )]
-#[get("user/{id}/")]
+#[get("user/{id}")]
 pub async fn getUserById(data: web::Data<AppState>, auth: BearerAuth, path: web::Path<String>) -> HttpResponse {
    let token = auth.token();
 

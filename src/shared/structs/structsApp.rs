@@ -5,11 +5,11 @@ use serde::Serialize;
 use regex::Regex;
 use utoipa::openapi::security::{ HttpAuthScheme, HttpBuilder, SecurityScheme };
 use utoipa::{ Modify, OpenApi, ToSchema };
-use crate::handlers::User::{ userGet, userPost };
+use crate::handlers::User::{ userGet, userPost, userPatch };
 use crate::handlers::Token::login;
 use derive_more::Display;
 
-use super::structsHandler::{ TokenOnly, User, UserCreate, UserLogin };
+use super::structsHandler::{ TokenOnly, User, UserCreate, UserLogin, UserOptional };
 
 pub struct AppState {
     pub version: String,
@@ -104,6 +104,69 @@ impl PickUpError {
                 },
         };
     }
+
+    pub fn newMessage(pickupErrorCode: PickUpErrorCode, message: &str) -> PickUpError {
+        return match pickupErrorCode {
+            PickUpErrorCode::IncorectCredentials =>
+                PickUpError {
+                    Code: PickUpErrorCode::IncorectCredentials,
+                    Message: message.to_string(),
+                },
+            PickUpErrorCode::Unauthorized =>
+                PickUpError {
+                    Code: PickUpErrorCode::Unauthorized,
+                    Message:message.to_string(),
+                },
+
+            PickUpErrorCode::Check =>
+                PickUpError {
+                    Code: PickUpErrorCode::Check,
+                    Message: message.to_string(),
+                },
+
+            PickUpErrorCode::BadRequest =>
+                PickUpError {
+                    Code: PickUpErrorCode::BadRequest,
+                    Message: message.to_string(),
+                },
+
+            PickUpErrorCode::ForeignKey =>
+                PickUpError {
+                    Code: PickUpErrorCode::ForeignKey,
+                    Message: message.to_string(),
+                },
+
+            PickUpErrorCode::Hashing =>
+                PickUpError {
+                    Code: PickUpErrorCode::Hashing,
+                    Message: message.to_string(),
+                },
+
+            PickUpErrorCode::InternalServerError =>
+                PickUpError {
+                    Code: PickUpErrorCode::InternalServerError,
+                    Message: message.to_string(),
+                },
+
+            PickUpErrorCode::Timeout =>
+                PickUpError {
+                    Code: PickUpErrorCode::Timeout,
+                    Message: message.to_string(),
+                },
+
+            PickUpErrorCode::Unique =>
+                PickUpError {
+                    Code: PickUpErrorCode::Unique,
+                    Message: message.to_string(),
+                },                
+
+            _ =>
+                PickUpError {
+                    Code: PickUpErrorCode::Other,
+                    Message: message.to_string(),
+                },
+        };
+    }
 }
 
 impl From<&dyn DatabaseError> for PickUpError {
@@ -174,8 +237,8 @@ pub struct PermissionLevelStruct {
 #[derive(OpenApi)]
 #[openapi(
     info(title = "Product Pick Upper"),
-    paths(userGet::getAllUsers, userGet::getUserById, userPost::postUser,  login::login),
-    components(schemas(User, UserCreate, UserLogin, TokenOnly, PickUpError, PickUpErrorCode, )),
+    paths(userGet::getAllUsers, userGet::getUserById, userPost::postUser, userPatch::patchUser,  login::login),
+    components(schemas(User, UserCreate, UserLogin, UserOptional, TokenOnly, PickUpError, PickUpErrorCode, )),
     tags(
         (name = "User", description = "User management endpoints"),
         (name = "Token", description = "Token management endpoints")

@@ -34,6 +34,15 @@ pub struct UserCreate {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct UserOptional {
+    pub Username: Option<String>,
+    pub Name: Option<String>,
+    pub Surname: Option<String>,
+    pub Password: Option<String>,
+    pub FK_UserRole: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct UserLogin {
     pub Username: String,
     pub Password: String,
