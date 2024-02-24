@@ -1,4 +1,5 @@
 use actix_web::{ post, web, HttpResponse };
+use crate::shared::errorHandling;
 use crate::shared::random::generateToken;
 use crate::shared::structs::structsApp::{ AppState, PickUpError, PickUpErrorCode };
 use crate::shared::structs::structsHandler::{ TokenOnly, UserCredentials, UserLogin };
@@ -21,16 +22,7 @@ pub async fn login(data: web::Data<AppState>, info: web::Json<UserLogin>) -> Htt
 
     match queryUserCredetials {
         Err(e) => {
-            match e.as_database_error(){
-               None => {
-                  return HttpResponse::BadRequest().content_type("application/json").json(PickUpError::new(PickUpErrorCode::IncorectCredentials));
-               }
-               Some(errorDatabase) => {
-                  let errorPickUpDatabase: PickUpError = errorDatabase.into();
-                  return HttpResponse::BadRequest().content_type("application/json").json(errorPickUpDatabase);
-               }
-            }
-           
+            return  errorHandling::getHRFromErrorIncorectCredentials(e);           
         }
         Ok(userCredentials) => {
 
@@ -59,9 +51,8 @@ pub async fn login(data: web::Data<AppState>, info: web::Json<UserLogin>) -> Htt
                      ).await;
                   
                      match queryInsertToken {
-                           Err(e) => {
-                              let errorPickUp: PickUpError = e.as_database_error().unwrap().into();
-                              return HttpResponse::BadRequest().content_type("application/json").json(errorPickUp);
+                           Err(e) => {                              
+                              return errorHandling::getHRFromErrorDatabase(e);
                            }
                            Ok(_) => {
                               let tokenOnly = TokenOnly{

@@ -1,31 +1,28 @@
-use actix_web::{ post, web, HttpResponse };
+use actix_web::{ delete, web, HttpResponse };
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 use crate::shared::auth::getPermissionLevelHttp;
 use crate::shared::errorHandling;
-use crate::shared::random::getRandomStr;
 use crate::shared::structs::structsApp::{ AppState, PermissionLevel, PickUpError, PickUpErrorCode };
-use crate::shared::structs::structsHandler::UserCreate;
-use crate::shared::password::getHashedPassword;
 
-/// Create a user
+/// Delete a user
 #[utoipa::path(
     context_path = "/",
     responses(
-        (status = 201, description = "Created user", body = String),
+        (status = 200, description = "Deleted user", body = String),
         (status = 400, description = "Bad Request", body = PickUpError),
         (status = 401, description = "Unauthorized", body = PickUpError),
         (status = 500, description = "Internal Server Error", body = PickUpError)
     ),
     security(
-        ("bearerAuth" = [])
-    ),
+      ("bearerAuth" = [])
+   ),
     tag = "User"
 )]
-#[post("user")]
-pub async fn postUser(
+#[delete("user/{id}")]
+pub async fn deleteUser(
     data: web::Data<AppState>,
-    info: web::Json<UserCreate>,
-    auth: BearerAuth
+    auth: BearerAuth,
+    path: web::Path<String>
 ) -> HttpResponse {
     let token = auth.token();
 
@@ -39,29 +36,15 @@ pub async fn postUser(
                     .content_type("application/json")
                     .json(PickUpError::new(PickUpErrorCode::Unauthorized))
             } else {
-                let hashedPassword = getHashedPassword(
-                    &info.Password,
-                    &data.pepper,
-                    &getRandomStr(64),
-                    &data.hashingParameters
-                ).unwrap();
-
-                let query: Result<_, sqlx::Error> = sqlx::query!(
-                        "INSERT INTO User ( Username , Name, Surname, Password, FK_UserRole) VALUES(?, ?, ?, ?, ?)",
-                        info.Username,
-                        info.Name,
-                        info.Surname,
-                        hashedPassword,
-                        info.FK_UserRole
-                    )
+                let query: Result<_, sqlx::Error> = sqlx::query!("DELETE FROM User WHERE Id=?", path.into_inner())
                     .execute(&data.pool).await;
 
                 match query {
                     Err(e) => {
-                        return errorHandling::getHRFromErrorDatabase(e);  
+                        return errorHandling::getHRFromErrorDatabase(e);
                     }
                     Ok(_) => {
-                        return HttpResponse::Created().content_type("application/json").finish();
+                        return HttpResponse::Ok().content_type("application/json").finish();
                     }
                 }
             }

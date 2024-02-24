@@ -35,7 +35,7 @@ pub async fn createRoot(
     hashingParameters: &HashingParameters
 ) -> Result<(), PickUpError> {
     let userRoleHighestPer = sqlx
-        ::query_as!(UserRole, "SELECT * FROM UserRole ORDER BY PermissionLevel DESC LIMIT 1")
+        ::query_as!(UserRole, "SELECT Id AS 'UserRoleId', PermissionLevel, Role, Description FROM UserRole ORDER BY PermissionLevel DESC LIMIT 1")
         .fetch_all(pool).await
         .unwrap();
 
@@ -46,12 +46,12 @@ pub async fn createRoot(
             "",
             "",
             getHashedPassword("admin", papper, &getRandomStr(64), hashingParameters).unwrap(),
-            userRoleHighestPer[0].Id
+            userRoleHighestPer[0].UserRoleId
         )
         .execute(pool).await;
 
     match query {
-        Err(e) => {
+        Err(e) => {            
             let errorPickUp: PickUpError = e.as_database_error().unwrap().into();
             return Err(errorPickUp);
         }

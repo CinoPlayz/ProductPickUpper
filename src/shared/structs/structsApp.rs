@@ -5,11 +5,11 @@ use serde::Serialize;
 use regex::Regex;
 use utoipa::openapi::security::{ HttpAuthScheme, HttpBuilder, SecurityScheme };
 use utoipa::{ Modify, OpenApi, ToSchema };
-use crate::handlers::User::{ userGet, userPost, userPatch };
+use crate::handlers::User::{ userGet, userPost, userPatch, userDelete };
 use crate::handlers::Token::login;
 use derive_more::Display;
 
-use super::structsHandler::{ TokenOnly, User, UserCreate, UserLogin, UserOptional };
+use super::structsHandler::{ TokenOnly, User, UserCreate, UserLogin, UserOptional, UserRole };
 
 pub struct AppState {
     pub version: String,
@@ -218,6 +218,15 @@ impl From<argon2::Error> for PickUpError {
     }
 }
 
+impl From<sqlx::Error> for PickUpError {
+    fn from(e: sqlx::Error) -> Self {
+        Self {
+            Code: PickUpErrorCode::InternalServerError,
+            Message: format!("Internal Server Error {}", e.to_string()),
+        }
+    }
+}
+
 pub struct GeneratedToken {
     pub Token: String,
     pub SHA256ofToken: String,
@@ -237,8 +246,8 @@ pub struct PermissionLevelStruct {
 #[derive(OpenApi)]
 #[openapi(
     info(title = "Product Pick Upper"),
-    paths(userGet::getAllUsers, userGet::getUserById, userPost::postUser, userPatch::patchUser,  login::login),
-    components(schemas(User, UserCreate, UserLogin, UserOptional, TokenOnly, PickUpError, PickUpErrorCode, )),
+    paths(userGet::getAllUsers, userGet::getUserById, userPost::postUser, userPatch::patchUser, userDelete::deleteUser,  login::login),
+    components(schemas(User, UserCreate, UserLogin, UserOptional, UserRole, TokenOnly, PickUpError, PickUpErrorCode, )),
     tags(
         (name = "User", description = "User management endpoints"),
         (name = "Token", description = "Token management endpoints")

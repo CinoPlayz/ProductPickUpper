@@ -4,24 +4,30 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 //UserRoles
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema, sqlx::FromRow)]
 pub struct UserRole {
-    pub Id: String,
+    pub UserRoleId: String,
     pub PermissionLevel: i8,
     pub Role: String,
     pub Description: Option<String>,
 }
 
+/*  pub UserRole_Id: String,
+    pub PermissionLevel: i8,
+    pub Role: String,
+    pub Description: Option<String> */
+
 //User
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema, sqlx::FromRow)]
 pub struct User {
-    pub Id: String,
+    pub UserId: String,
     pub Username: String,
     pub Name: String,
     pub Surname: String,
     pub Password: String,
     pub DateCreated: NaiveDateTime,
-    pub FK_UserRole: String,
+    #[sqlx(flatten)]
+    pub UserRole: UserRole
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]

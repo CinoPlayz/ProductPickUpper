@@ -166,6 +166,8 @@ async fn main() -> std::io::Result<()> {
             "Consider using TLS encryption for safer communication".yellow()
         );
     }
+
+    //TODO: Configure CORS
     
     let httpServer = HttpServer::new(move ||
         App::new()
@@ -220,6 +222,7 @@ async fn main() -> std::io::Result<()> {
             .service(handlers::User::userGet::getUserById)
             .service(handlers::User::userPost::postUser)
             .service(handlers::User::userPatch::patchUser)
+            .service(handlers::User::userDelete::deleteUser)
             .service(handlers::Token::login::login)
     );
 
