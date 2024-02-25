@@ -16,7 +16,7 @@ use crate::shared::password::isPasswordCorrect;
 )]
 #[post("login")]
 pub async fn login(data: web::Data<AppState>, info: web::Json<UserLogin>) -> HttpResponse {
-    let queryUserCredetials:Result<UserCredentials, sqlx::Error> = sqlx
+    let queryUserCredetials: Result<UserCredentials, sqlx::Error> = sqlx
         ::query_as!(UserCredentials, "SELECT Id, Username, Password FROM User WHERE Username=?", info.Username)
         .fetch_one(&data.pool).await;
 

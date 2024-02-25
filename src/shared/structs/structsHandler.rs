@@ -12,11 +12,6 @@ pub struct UserRole {
     pub Description: Option<String>,
 }
 
-/*  pub UserRole_Id: String,
-    pub PermissionLevel: i8,
-    pub Role: String,
-    pub Description: Option<String> */
-
 //User
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema, sqlx::FromRow)]
 pub struct User {
@@ -84,4 +79,25 @@ pub struct TokenCreate {
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct TokenOnly {
     pub Token: String
+}
+
+
+//ZipCode
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema, sqlx::FromRow)]
+pub struct ZipCode {
+    pub ZipCodeId: String,
+    pub Number: i32,
+    pub City: String
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct ZipCodeCreate {
+    pub Number: i32,
+    pub City: String
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct ZipCodeOptional {
+    pub Number: Option<i32>,
+    pub City: Option<String>
 }

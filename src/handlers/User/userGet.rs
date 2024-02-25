@@ -10,7 +10,7 @@ use actix_web_httpauth::extractors::bearer::BearerAuth;
 #[utoipa::path(
     context_path = "/",
     responses(
-        (status = 200, description = "Returns all users", body = User),
+        (status = 200, description = "Returns all users", body = Vec<User>),
         (status = 401, description = "Unauthorized", body = PickUpError),
         (status = 500, description = "Internal Server Error", body = PickUpError)
     ),

@@ -224,6 +224,11 @@ async fn main() -> std::io::Result<()> {
             .service(handlers::User::userPatch::patchUser)
             .service(handlers::User::userDelete::deleteUser)
             .service(handlers::Token::login::login)
+            .service(handlers::ZipCode::zipcodeGet::getAllZipCodes)
+            .service(handlers::ZipCode::zipcodeGet::getZipCodeById)
+            .service(handlers::ZipCode::zipcodePost::postZipCode)
+            .service(handlers::ZipCode::zipcodePatch::patchZipCode)
+            .service(handlers::ZipCode::zipcodeDelete::deleteZipCode)
     );
 
     if certExists {
