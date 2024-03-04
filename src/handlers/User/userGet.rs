@@ -52,7 +52,7 @@ pub async fn getAllUsers(data: web::Data<AppState>, auth: BearerAuth) -> HttpRes
     }
 }
 
-/// Get users by Id
+/// Get user by Id
 #[utoipa::path(
     context_path = "/",
     responses(
