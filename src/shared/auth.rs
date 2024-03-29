@@ -7,6 +7,9 @@ use super::structs::structsApp::PickUpError;
 use super::structs::structsApp::PickUpErrorCode;
 use crate::shared::structs::structsApp::PermissionLevelStruct;
 
+//TODO: Make this middleware
+//TODO: Make MVC structure
+//TODO: Update to latest
 async fn authenticate(token: &str, pool: &Pool<MySql>) -> Result<bool, PickUpError> {
     let tokenHashed = digest(token);
 
