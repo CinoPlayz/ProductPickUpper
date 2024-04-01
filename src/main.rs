@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
     println!();
 
     //Load environment variables
-    dotenvy::from_path("config/.env").expect("Error while reding from config/.env: ");
+    dotenvy::from_filename("config/.env").expect("Error while reding from config/.env: ");
 
     println!("{} - Reading MYSQL_URL from .env file", getCurrentTimeStr());
     let envDBUrl = env::var("MYSQL_URL").expect("Error while reding MYSQL_URL variable:");
