@@ -1,15 +1,14 @@
-use actix_web::{ post, web, HttpResponse };
-use actix_web_httpauth::extractors::bearer::BearerAuth;
-use crate::shared::auth::getPermissionLevelHttp;
-use crate::shared::errorHandling;
-use crate::shared::random::getRandomStr;
-use crate::shared::structs::structsApp::{ AppState, PermissionLevel, PickUpError, PickUpErrorCode };
-use crate::shared::structs::structsHandler::UserCreate;
+use crate::shared::{auth::permissionLevelAdminMiddleware, errorHandling};
 use crate::shared::password::getHashedPassword;
+use crate::shared::random::getRandomStr;
+use crate::shared::structs::structsApp::AppState;
+use crate::shared::structs::structsHandler::UserCreate;
+use actix_web::{post, web, HttpResponse};
+use actix_web_lab::middleware::from_fn;
 
 /// Create a user
 #[utoipa::path(
-    context_path = "/",
+    context_path = "/user",
     responses(
         (status = 201, description = "Created user", body = String),
         (status = 400, description = "Bad Request", body = PickUpError),
@@ -21,50 +20,35 @@ use crate::shared::password::getHashedPassword;
     ),
     tag = "User"
 )]
-#[post("user")]
-pub async fn postUser(
-    data: web::Data<AppState>,
-    info: web::Json<UserCreate>,
-    auth: BearerAuth
-) -> HttpResponse {
-    let token = auth.token();
+#[post("", wrap="from_fn(permissionLevelAdminMiddleware)")]
+pub async fn postUser(data: web::Data<AppState>, info: web::Json<UserCreate>) -> HttpResponse {
+    let hashedPassword = getHashedPassword(
+        &info.Password,
+        &data.pepper,
+        &getRandomStr(64),
+        &data.hashingParameters,
+    )
+    .unwrap();
 
-    match getPermissionLevelHttp(token, &data.pool).await {
+    let query: Result<_, sqlx::Error> = sqlx::query!(
+        "INSERT INTO User ( Username , Name, Surname, Password, FK_UserRole) VALUES(?, ?, ?, ?, ?)",
+        info.Username,
+        info.Name,
+        info.Surname,
+        hashedPassword,
+        info.FK_UserRole
+    )
+    .execute(&data.pool)
+    .await;
+
+    match query {
         Err(e) => {
-            return e;
+            return errorHandling::getHRFromErrorDatabase(e);
         }
-        Ok(userPermissionLevel) => {
-            if userPermissionLevel != PermissionLevel::Admin {
-                HttpResponse::Unauthorized()
-                    .content_type("application/json")
-                    .json(PickUpError::new(PickUpErrorCode::Unauthorized))
-            } else {
-                let hashedPassword = getHashedPassword(
-                    &info.Password,
-                    &data.pepper,
-                    &getRandomStr(64),
-                    &data.hashingParameters
-                ).unwrap();
-
-                let query: Result<_, sqlx::Error> = sqlx::query!(
-                        "INSERT INTO User ( Username , Name, Surname, Password, FK_UserRole) VALUES(?, ?, ?, ?, ?)",
-                        info.Username,
-                        info.Name,
-                        info.Surname,
-                        hashedPassword,
-                        info.FK_UserRole
-                    )
-                    .execute(&data.pool).await;
-
-                match query {
-                    Err(e) => {
-                        return errorHandling::getHRFromErrorDatabase(e);  
-                    }
-                    Ok(_) => {
-                        return HttpResponse::Created().content_type("application/json").finish();
-                    }
-                }
-            }
+        Ok(_) => {
+            return HttpResponse::Created()
+                .content_type("application/json")
+                .finish();
         }
     }
 }

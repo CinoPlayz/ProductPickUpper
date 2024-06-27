@@ -1,12 +1,11 @@
-use actix_web::{ delete, web, HttpResponse };
-use actix_web_httpauth::extractors::bearer::BearerAuth;
-use crate::shared::auth::getPermissionLevelHttp;
-use crate::shared::errorHandling;
-use crate::shared::structs::structsApp::{ AppState, PermissionLevel, PickUpError, PickUpErrorCode };
+use crate::shared::{auth::permissionLevelAdminMiddleware, errorHandling};
+use crate::shared::structs::structsApp::AppState;
+use actix_web::{delete, web, HttpResponse};
+use actix_web_lab::middleware::from_fn;
 
 /// Delete a user
 #[utoipa::path(
-    context_path = "/",
+    context_path = "/user",
     responses(
         (status = 200, description = "Deleted user", body = String),
         (status = 400, description = "Bad Request", body = PickUpError),
@@ -18,36 +17,19 @@ use crate::shared::structs::structsApp::{ AppState, PermissionLevel, PickUpError
    ),
     tag = "User"
 )]
-#[delete("user/{id}")]
-pub async fn deleteUser(
-    data: web::Data<AppState>,
-    auth: BearerAuth,
-    path: web::Path<String>
-) -> HttpResponse {
-    let token = auth.token();
+#[delete("/{id}", wrap="from_fn(permissionLevelAdminMiddleware)")]
+pub async fn deleteUser(data: web::Data<AppState>, path: web::Path<String>) -> HttpResponse {
+    let query: Result<_, sqlx::Error> =
+        sqlx::query!("DELETE FROM User WHERE Id=?", path.into_inner())
+            .execute(&data.pool)
+            .await;
 
-    match getPermissionLevelHttp(token, &data.pool).await {
+    match query {
         Err(e) => {
-            return e;
+            return errorHandling::getHRFromErrorDatabase(e);
         }
-        Ok(userPermissionLevel) => {
-            if userPermissionLevel != PermissionLevel::Admin {
-                HttpResponse::Unauthorized()
-                    .content_type("application/json")
-                    .json(PickUpError::new(PickUpErrorCode::Unauthorized))
-            } else {
-                let query: Result<_, sqlx::Error> = sqlx::query!("DELETE FROM User WHERE Id=?", path.into_inner())
-                    .execute(&data.pool).await;
-
-                match query {
-                    Err(e) => {
-                        return errorHandling::getHRFromErrorDatabase(e);
-                    }
-                    Ok(_) => {
-                        return HttpResponse::Ok().content_type("application/json").finish();
-                    }
-                }
-            }
+        Ok(_) => {
+            return HttpResponse::Ok().content_type("application/json").finish();
         }
     }
 }

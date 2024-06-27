@@ -22,4 +22,6 @@ regex = "1.10"
 utoipa = { version = "4", features = ["actix_extras", "chrono"] }
 utoipa-swagger-ui = { version = "6", features = ["actix-web"] }
 sha256 = "1.5.0"
+futures = "0.3.30"
 derive_more = "0.99.17"
+actix-web-lab = "0.20.2"

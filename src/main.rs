@@ -1,27 +1,25 @@
 #![allow(non_snake_case)]
-use std::{ env, path::Path };
-use owo_colors::{ colors::{ Green, Red }, OwoColorize };
-use sqlx::MySqlPool;
-use actix_web::{
-    error,
-    get,
-    web::{ self, JsonConfig, PathConfig },
-    App,
-    HttpRequest,
-    HttpResponse,
-    HttpServer,
-    Responder,
-};
-use openssl::ssl::{ SslAcceptor, SslFiletype, SslMethod };
-use utoipa::OpenApi;
-use utoipa_swagger_ui::{ Config, SwaggerUi };
 use crate::shared::{
     chrono::getCurrentTimeStr,
     password::createRoot,
-    structs::structsApp::{ ApiDoc, PickUpError, PickUpErrorCode },
     structs::structsApp::AppState,
     structs::structsApp::HashingParameters,
+    structs::structsApp::{ApiDoc, PickUpError, PickUpErrorCode},
 };
+use actix_web::{
+    error, get,
+    web::{self, JsonConfig, PathConfig},
+    App, HttpRequest, HttpResponse, HttpServer, Responder,
+};
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+use owo_colors::{
+    colors::{Green, Red},
+    OwoColorize,
+};
+use sqlx::MySqlPool;
+use std::{env, path::Path};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::{Config, SwaggerUi};
 mod handlers;
 mod shared;
 
@@ -42,40 +40,43 @@ async fn main() -> std::io::Result<()> {
     println!("{} - Reading MYSQL_URL from .env file", getCurrentTimeStr());
     let envDBUrl = env::var("MYSQL_URL").expect("Error while reding MYSQL_URL variable:");
 
-    println!("{} - Reading IP_WITH_PORT from .env file", getCurrentTimeStr());
-    let envIpWithPort = env
-        ::var("IP_WITH_PORT")
-        .expect("Error while reding IP_WITH_PORT variable:");
+    println!(
+        "{} - Reading IP_WITH_PORT from .env file",
+        getCurrentTimeStr()
+    );
+    let envIpWithPort =
+        env::var("IP_WITH_PORT").expect("Error while reding IP_WITH_PORT variable:");
 
-    println!("{} - Reading PASSWORD_PAPPER from .env file", getCurrentTimeStr());
-    let envPasswordPapper = env
-        ::var("IP_WITH_PORT")
-        .expect("Error while reding IP_WITH_PORT variable:");
+    println!(
+        "{} - Reading PASSWORD_PAPPER from .env file",
+        getCurrentTimeStr()
+    );
+    let envPasswordPapper =
+        env::var("IP_WITH_PORT").expect("Error while reding IP_WITH_PORT variable:");
 
-    println!("{} - Reading CREATE_ROOT from .env file", getCurrentTimeStr());
-    let envCreateRoot = env
-        ::var("CREATE_ROOT")
+    println!(
+        "{} - Reading CREATE_ROOT from .env file",
+        getCurrentTimeStr()
+    );
+    let envCreateRoot = env::var("CREATE_ROOT")
         .expect("Error while reding CREATE_ROOT variable:")
         .parse::<bool>()
         .expect("Error while converting CREATE_ROOT to bool:");
 
     println!("{} - Reading MEM_COST from .env file", getCurrentTimeStr());
-    let envMemCost = env
-        ::var("MEM_COST")
+    let envMemCost = env::var("MEM_COST")
         .expect("Error while reding MEM_COST variable:")
         .parse::<u32>()
         .expect("Error while converting MEM_COST to u32:");
 
     println!("{} - Reading TIME_COST from .env file", getCurrentTimeStr());
-    let envTimeCost = env
-        ::var("TIME_COST")
+    let envTimeCost = env::var("TIME_COST")
         .expect("Error while reding TIME_COST variable:")
         .parse::<u32>()
         .expect("Error while converting TIME_COST to u32:");
 
     println!("{} - Reading LANES from .env file", getCurrentTimeStr());
-    let envLanes = env
-        ::var("LANES")
+    let envLanes = env::var("LANES")
         .expect("Error while reding LANES variable:")
         .parse::<u32>()
         .expect("Error while converting envLanes to u32:");
@@ -88,14 +89,22 @@ async fn main() -> std::io::Result<()> {
 
     //Tries to connect to a database
     println!("{} - Connecting to databse", getCurrentTimeStr());
-    let pool = MySqlPool::connect(&envDBUrl).await.expect(
-        "Error while trying to connect to database"
+    let pool = MySqlPool::connect(&envDBUrl)
+        .await
+        .expect("Error while trying to connect to database");
+    println!(
+        "{} - {}",
+        getCurrentTimeStr(),
+        format!("Connected to databse").fg::<Green>()
     );
-    println!("{} - {}", getCurrentTimeStr(), format!("Connected to databse").fg::<Green>());
 
     //Inserts root if CREATE_ROOT is true
     if envCreateRoot {
-        println!("{} - {}", getCurrentTimeStr(), "Inserting root user (this might take some time)");
+        println!(
+            "{} - {}",
+            getCurrentTimeStr(),
+            "Inserting root user (this might take some time)"
+        );
 
         match createRoot(&pool, &envPasswordPapper, &hashingParameters).await {
             Err(e) => {
@@ -122,11 +131,13 @@ async fn main() -> std::io::Result<()> {
     //Tries to find TLS keys for secure communication
     println!("{} - Finding TLS keys", getCurrentTimeStr());
     let mut certExists: bool = false;
-    let mut sslBuilder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).expect(
-        "Error while creating ssl builder: "
-    );
+    let mut sslBuilder = SslAcceptor::mozilla_intermediate(SslMethod::tls())
+        .expect("Error while creating ssl builder: ");
     if Path::new("config/key.pem").exists() && Path::new("config/cert.pem").exists() {
-        println!("{} - Found TLS keys (key.pem, cert.pem)", getCurrentTimeStr());
+        println!(
+            "{} - Found TLS keys (key.pem, cert.pem)",
+            getCurrentTimeStr()
+        );
         certExists = true;
         // load TLS keys
         // to create a self-signed temporary cert for testing:
@@ -134,7 +145,11 @@ async fn main() -> std::io::Result<()> {
 
         match sslBuilder.set_private_key_file("config/key.pem", SslFiletype::PEM) {
             Ok(_) => {
-                println!("{} - {}", getCurrentTimeStr(), format!("Opened key.pem").fg::<Green>());
+                println!(
+                    "{} - {}",
+                    getCurrentTimeStr(),
+                    format!("Opened key.pem").fg::<Green>()
+                );
             }
             Err(e) => {
                 println!(
@@ -148,7 +163,11 @@ async fn main() -> std::io::Result<()> {
 
         match sslBuilder.set_certificate_chain_file("config/cert.pem") {
             Ok(_) => {
-                println!("{} - {}", getCurrentTimeStr(), format!("Opened cert.pem").fg::<Green>());
+                println!(
+                    "{} - {}",
+                    getCurrentTimeStr(),
+                    format!("Opened cert.pem").fg::<Green>()
+                );
             }
             Err(e) => {
                 println!(
@@ -168,68 +187,67 @@ async fn main() -> std::io::Result<()> {
     }
 
     //TODO: Configure CORS
-    
-    let httpServer = HttpServer::new(move ||
+
+    let httpServer = HttpServer::new(move || {
         App::new()
-            .app_data(
-                PathConfig::default().error_handler(|err, _req| {
-                    let errorString = err.to_string();
-                    error::InternalError
-                        ::from_response(
-                            err,
-                            HttpResponse::BadRequest().json(PickUpError {
-                                Code: PickUpErrorCode::BadRequest,
-                                Message: errorString.to_string(),
-                            })
-                        )
-                        .into()
-                })
-            )
-            .app_data(
-                JsonConfig::default().error_handler(|err, _req| {
-                    let errorString = err.to_string();
-                    error::InternalError
-                        ::from_response(
-                            err,
-                            HttpResponse::BadRequest().json(PickUpError {
-                                Code: PickUpErrorCode::BadRequest,
-                                Message: errorString.to_string(),
-                            })
-                        )
-                        .into()
-                })
-            )
-            .app_data(
-                web::Data::new(AppState {
-                    version: VERSION.to_string(),
-                    pepper: envPasswordPapper.clone(),
-                    pool: pool.clone(),
-                    createRoot: envCreateRoot.clone(),
-                    hashingParameters: HashingParameters {
-                        mem_cost: envMemCost.clone(),
-                        time_cost: envTimeCost.clone(),
-                        lanes: envLanes.clone(),
-                    },
-                })
-            )
+            .app_data(PathConfig::default().error_handler(|err, _req| {
+                let errorString = err.to_string();
+                error::InternalError::from_response(
+                    err,
+                    HttpResponse::BadRequest().json(PickUpError {
+                        Code: PickUpErrorCode::BadRequest,
+                        Message: errorString.to_string(),
+                    }),
+                )
+                .into()
+            }))
+            .app_data(JsonConfig::default().error_handler(|err, _req| {
+                let errorString = err.to_string();
+                error::InternalError::from_response(
+                    err,
+                    HttpResponse::BadRequest().json(PickUpError {
+                        Code: PickUpErrorCode::BadRequest,
+                        Message: errorString.to_string(),
+                    }),
+                )
+                .into()
+            }))
+            .app_data(web::Data::new(AppState {
+                version: VERSION.to_string(),
+                pepper: envPasswordPapper.clone(),
+                pool: pool.clone(),
+                createRoot: envCreateRoot.clone(),
+                hashingParameters: HashingParameters {
+                    mem_cost: envMemCost.clone(),
+                    time_cost: envTimeCost.clone(),
+                    lanes: envLanes.clone(),
+                },
+            }))
             .service(
                 SwaggerUi::new("/docs/{_:.*}")
                     .url("/docs/openapi.json", ApiDoc::openapi())
-                    .config(Config::default().use_base_layout().filter(true))
+                    .config(Config::default().use_base_layout().filter(true)),
             )
             .service(index)
-            .service(handlers::User::userGet::getAllUsers)
-            .service(handlers::User::userGet::getUserById)
-            .service(handlers::User::userPost::postUser)
-            .service(handlers::User::userPatch::patchUser)
-            .service(handlers::User::userDelete::deleteUser)
             .service(handlers::Token::login::login)
-            .service(handlers::ZipCode::zipcodeGet::getAllZipCodes)
-            .service(handlers::ZipCode::zipcodeGet::getZipCodeById)
-            .service(handlers::ZipCode::zipcodePost::postZipCode)
-            .service(handlers::ZipCode::zipcodePatch::patchZipCode)
-            .service(handlers::ZipCode::zipcodeDelete::deleteZipCode)
-    );
+            .service(
+                web::scope("/user")
+                    .service(handlers::User::userGet::getAllUsers)
+                    .service(handlers::User::userGet::getUserById)
+                    .service(handlers::User::userPost::postUser)
+                    .service(handlers::User::userPatch::patchUser)
+                    .service(handlers::User::userDelete::deleteUser),
+            )
+            .service(
+                web::scope("/zipcode")
+                    .service(handlers::ZipCode::zipcodeGet::getAllZipCodes)
+                    .service(handlers::User::userGet::getAllUsers)
+                    .service(handlers::ZipCode::zipcodeGet::getZipCodeById)
+                    .service(handlers::ZipCode::zipcodePost::postZipCode)
+                    .service(handlers::ZipCode::zipcodePatch::patchZipCode)
+                    .service(handlers::ZipCode::zipcodeDelete::deleteZipCode),
+            )
+    });
 
     if certExists {
         println!(
@@ -240,7 +258,8 @@ async fn main() -> std::io::Result<()> {
         return httpServer
             .bind_openssl(&envIpWithPort, sslBuilder)
             .expect("Error while setting address with port/openssl: ")
-            .run().await;
+            .run()
+            .await;
     } else {
         println!(
             "{} - {}",
@@ -250,6 +269,7 @@ async fn main() -> std::io::Result<()> {
         return httpServer
             .bind(&envIpWithPort)
             .expect("Error while setting address with port: ")
-            .run().await;
+            .run()
+            .await;
     }
 }

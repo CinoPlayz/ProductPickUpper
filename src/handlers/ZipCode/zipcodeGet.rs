@@ -1,9 +1,11 @@
-use actix_web::{ get, web, HttpResponse };
-use crate::shared::auth::authenticateHttp;
+use crate::shared::auth::{
+    permissionLevelAdminMiddleware, permissionLevelUserMiddleware,
+};
 use crate::shared::errorHandling;
 use crate::shared::structs::structsApp::AppState;
 use crate::shared::structs::structsHandler::ZipCode;
-use actix_web_httpauth::extractors::bearer::BearerAuth;
+use actix_web::{get, web, HttpResponse};
+use actix_web_lab::middleware::from_fn;
 
 /// Get all zip codes
 #[utoipa::path(
@@ -18,29 +20,23 @@ use actix_web_httpauth::extractors::bearer::BearerAuth;
     ),
     tag = "Zip Code"
 )]
-#[get("zipcode")]
-pub async fn getAllZipCodes(data: web::Data<AppState>, auth: BearerAuth) -> HttpResponse {
-    let token = auth.token();
+#[get("", wrap = "from_fn(permissionLevelUserMiddleware)")]
+pub async fn getAllZipCodes(data: web::Data<AppState>) -> HttpResponse {
+    let query: Result<Vec<ZipCode>, sqlx::Error> = sqlx::query_as!(
+        ZipCode,
+        "SELECT Id AS 'ZipCodeId', Number, City FROM ZipCode"
+    )
+    .fetch_all(&data.pool)
+    .await;
 
-    match authenticateHttp(token, &data.pool).await {
-        Some(e) => {
-            return e;
+    match query {
+        //e.g. If connection to database is lost
+        Err(e) => {
+            return errorHandling::getHRFromErrorInternal(e);
         }
-        None => {
-                let query: Result<Vec<ZipCode>, sqlx::Error> = sqlx::query_as!(ZipCode, "SELECT Id AS 'ZipCodeId', Number, City FROM ZipCode")
-                .fetch_all(&data.pool).await;    
-
-                match query {
-                    //e.g. If connection to database is lost
-                    Err(e) => {
-                        return errorHandling::getHRFromErrorInternal(e);
-                    }
-                    Ok(users) => {
-                        HttpResponse::Ok().content_type("application/json").json(&users)
-                    }
-                }
-            
-        }
+        Ok(users) => HttpResponse::Ok()
+            .content_type("application/json")
+            .json(&users),
     }
 }
 
@@ -57,34 +53,25 @@ pub async fn getAllZipCodes(data: web::Data<AppState>, auth: BearerAuth) -> Http
     ),
     tag = "Zip Code"
 )]
-#[get("zipcode/{id}")]
-pub async fn getZipCodeById(
-    data: web::Data<AppState>,
-    auth: BearerAuth,
-    path: web::Path<String>
-) -> HttpResponse {
-    let token = auth.token();
+#[get("/{id}", wrap = "from_fn(permissionLevelAdminMiddleware)")]
+pub async fn getZipCodeById(data: web::Data<AppState>, path: web::Path<String>) -> HttpResponse {
+    let uuid = path.into_inner();
 
-    match authenticateHttp(token, &data.pool).await {
-        Some(e) => {
-            return e;
+    let query: Result<Vec<ZipCode>, sqlx::Error> = sqlx::query_as!(
+        ZipCode,
+        "SELECT Id AS 'ZipCodeId', Number, City FROM ZipCode WHERE Id=?",
+        uuid
+    )
+    .fetch_all(&data.pool)
+    .await;
+
+    match query {
+        //e.g. If connection to database is lost
+        Err(e) => {
+            return errorHandling::getHRFromErrorInternal(e);
         }
-        None => {
-            let uuid = path.into_inner();
-
-            let query: Result<Vec<ZipCode>, sqlx::Error> = sqlx::query_as!(ZipCode, "SELECT Id AS 'ZipCodeId', Number, City FROM ZipCode WHERE Id=?", uuid)
-            .fetch_all(&data.pool).await;
-
-            match query {
-                //e.g. If connection to database is lost
-                Err(e) => {
-                    return errorHandling::getHRFromErrorInternal(e);  
-                }
-                Ok(users) => {
-                    HttpResponse::Ok().content_type("application/json").json(&users)
-                }
-            }
-            
-        }
+        Ok(users) => HttpResponse::Ok()
+            .content_type("application/json")
+            .json(&users),
     }
 }
