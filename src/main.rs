@@ -98,6 +98,15 @@ async fn main() -> std::io::Result<()> {
         format!("Connected to databse").fg::<Green>()
     );
 
+    //Change mysql session timezone to UTC
+    println!("{} - Changing mysql session timezone", getCurrentTimeStr());
+    sqlx::query!(
+        "SET SESSION time_zone = '+00:00';",
+    )
+    .execute(&pool)
+    .await
+    .expect("Error while trying to set timezone");
+
     //Inserts root if CREATE_ROOT is true
     if envCreateRoot {
         println!(

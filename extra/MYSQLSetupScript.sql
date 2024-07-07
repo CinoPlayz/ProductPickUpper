@@ -31,8 +31,10 @@ CREATE TABLE `User`(
 CREATE TABLE `Token`(
     `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     `Token` VARCHAR(64) NOT NULL,	
+	`Type` TINYINT DEFAULT 0 NOT NULL, /*0-Access, 1-Refresh*/
+	`DeviceInfo` VARCHAR(128),	
     `DateStart` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `DateEnd` DATETIME NOT NULL,
+    `DateEnd` DATETIME NOT NULL,	
 	`DateCreated` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `FK_User` VARCHAR(36) NOT NULL,
     FOREIGN KEY (`FK_User`) REFERENCES `User`(`Id`) ON DELETE CASCADE
@@ -55,7 +57,7 @@ CREATE TABLE `Customer`(
 	FOREIGN KEY (`FK_ZipCode`) REFERENCES `ZipCode`(`Id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE `MetricUnit`(
+CREATE TABLE `MeasurementUnit`(
     `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 	`Unit` VARCHAR(36) NOT NULL,
     `Abbreviation` VARCHAR(10) NOT NULL
@@ -72,9 +74,9 @@ CREATE TABLE `Price`(
 CREATE TABLE `Product`(
     `Id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     `Name` VARCHAR(50) NOT NULL,
-    `FK_MetricUnit` VARCHAR(36) NOT NULL,
+    `FK_MeasurementUnit` VARCHAR(36) NOT NULL,
     `FK_Price` VARCHAR(36), 
-    FOREIGN KEY (`FK_MetricUnit`) REFERENCES `MetricUnit`(`Id`) ON DELETE CASCADE,
+    FOREIGN KEY (`FK_MeasurementUnit`) REFERENCES `MeasurementUnit`(`Id`) ON DELETE CASCADE,
     FOREIGN KEY (`FK_Price`) REFERENCES `Price`(`Id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -125,7 +127,7 @@ INSERT INTO `UserRole`(`Role`, `PermissionLevel`, `Description`) VALUES
 ('user', 0, 'Can view/create/edit/delete only on pickup table');
 
 
-INSERT INTO `MetricUnit`(`Unit`, `Abbreviation`) VALUES 
+INSERT INTO `MeasurementUnit`(`Unit`, `Abbreviation`) VALUES 
 ('Litre', 'L'),
 ('Cubic Metre', 'm3'),
 ('Cubic Decimeters', 'dm3'),
