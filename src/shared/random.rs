@@ -1,7 +1,7 @@
 use rand::distributions::{Alphanumeric, DistString};
 use sha256::digest;
 
-use super::structs::structsApp::GeneratedToken;
+use crate::models::structsApp::GeneratedToken;
 
 pub fn getRandomStr(length: usize) -> String {
     return Alphanumeric.sample_string(&mut rand::thread_rng(), length);

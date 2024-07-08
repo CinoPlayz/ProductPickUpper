@@ -5,9 +5,9 @@ use serde::Serialize;
 use regex::Regex;
 use utoipa::openapi::security::{ HttpAuthScheme, HttpBuilder, SecurityScheme };
 use utoipa::{ Modify, OpenApi, ToSchema };
-use crate::handlers::User::{ userGet, userPost, userPatch, userDelete };
-use crate::handlers::ZipCode::{ zipcodeGet, zipcodePost, zipcodePatch, zipcodeDelete };
-use crate::handlers::Token::login;
+use crate::controllers::User::{ userGet, userPost, userPatch, userDelete };
+use crate::controllers::ZipCode::{ zipcodeGet, zipcodePost, zipcodePatch, zipcodeDelete };
+use crate::controllers::Token::{refresh, access};
 use derive_more::Display;
 
 use super::structsHandler::{ TokenOnly, User, UserCreate, UserLogin, UserOptional, UserRole, ZipCode, ZipCodeCreate, ZipCodeOptional };
@@ -16,7 +16,6 @@ pub struct AppState {
     pub version: String,
     pub pepper: String,
     pub pool: Pool<MySql>,
-    pub createRoot: bool,
     pub hashingParameters: HashingParameters,
 }
 
@@ -247,7 +246,7 @@ pub struct PermissionLevelStruct {
 #[derive(OpenApi)]
 #[openapi(
     info(title = "Product Pick Upper"),
-    paths(userGet::getAllUsers, userGet::getUserById, userPost::postUser, userPatch::patchUser, userDelete::deleteUser,  login::login, zipcodeGet::getAllZipCodes, zipcodeGet::getZipCodeById, zipcodePost::postZipCode, zipcodePatch::patchZipCode, zipcodeDelete::deleteZipCode),
+    paths(userGet::getAllUsers, userGet::getUserById, userPost::postUser, userPatch::patchUser, userDelete::deleteUser,  refresh::refresh, access::access, zipcodeGet::getAllZipCodes, zipcodeGet::getZipCodeById, zipcodePost::postZipCode, zipcodePatch::patchZipCode, zipcodeDelete::deleteZipCode),
     components(schemas(User, UserCreate, UserLogin, UserOptional, UserRole, TokenOnly, PickUpError, PickUpErrorCode, ZipCode, ZipCodeCreate, ZipCodeOptional)),
     tags(
         (name = "User", description = "User management endpoints"),

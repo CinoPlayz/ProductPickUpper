@@ -48,6 +48,7 @@ pub struct UserLogin {
     pub Username: String,
     pub Password: String,
     pub Active: u32, //How long should token be active in seconds
+    pub DeviceInfo: String
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -58,14 +59,16 @@ pub struct UserCredentials {
 }
 
 //Token
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema, sqlx::FromRow)]
 pub struct Token {
     pub Id: String,
     pub Token: String,
+    pub Type: i8,
+    pub DeviceInfo: String,
     pub DateStart: NaiveDateTime,
     pub DateEnd: NaiveDateTime,
     pub DateCreated: NaiveDateTime,
-    pub FK_User: String,
+    pub FK_User: String
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]

@@ -1,15 +1,11 @@
 #![allow(non_snake_case)]
 use crate::shared::{
     chrono::getCurrentTimeStr,
-    password::createRoot,
-    structs::structsApp::AppState,
-    structs::structsApp::HashingParameters,
-    structs::structsApp::{ApiDoc, PickUpError, PickUpErrorCode},
+    password::createRoot
 };
+use crate::models::structsApp:: {AppState, HashingParameters, ApiDoc, PickUpError, PickUpErrorCode};
 use actix_web::{
-    error, get,
-    web::{self, JsonConfig, PathConfig},
-    App, HttpRequest, HttpResponse, HttpServer, Responder,
+    error, get, http::header, web::{self, JsonConfig, PathConfig}, App, HttpRequest, HttpResponse, HttpServer, Responder
 };
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use owo_colors::{
@@ -20,14 +16,21 @@ use sqlx::MySqlPool;
 use std::{env, path::Path};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::{Config, SwaggerUi};
-mod handlers;
+mod controllers;
 mod shared;
+mod models;
+use actix_cors::Cors;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[get("/")]
 async fn index(_req: HttpRequest) -> impl Responder {
     "Welcome!"
+}
+
+#[get("/version")]
+pub async fn version(data: web::Data<AppState>) -> HttpResponse {
+    HttpResponse::Ok().body(data.version.clone())    
 }
 
 #[actix_web::main]
@@ -195,8 +198,6 @@ async fn main() -> std::io::Result<()> {
         );
     }
 
-    //TODO: Configure CORS
-
     let httpServer = HttpServer::new(move || {
         App::new()
             .app_data(PathConfig::default().error_handler(|err, _req| {
@@ -225,36 +226,38 @@ async fn main() -> std::io::Result<()> {
                 version: VERSION.to_string(),
                 pepper: envPasswordPapper.clone(),
                 pool: pool.clone(),
-                createRoot: envCreateRoot.clone(),
                 hashingParameters: HashingParameters {
                     mem_cost: envMemCost.clone(),
                     time_cost: envTimeCost.clone(),
                     lanes: envLanes.clone(),
                 },
             }))
+            .wrap(Cors::default().allowed_origin("http://localhost:5173").allowed_methods(vec!["GET", "POST", "PUT", "PATCH", "DELETE"]).allowed_headers(&[header::AUTHORIZATION, header::ACCEPT, header::CONTENT_TYPE, header::CONTENT_LENGTH]).supports_credentials())
             .service(
                 SwaggerUi::new("/docs/{_:.*}")
                     .url("/docs/openapi.json", ApiDoc::openapi())
                     .config(Config::default().use_base_layout().filter(true)),
             )
             .service(index)
-            .service(handlers::Token::login::login)
+            .service(version)
+            .service(controllers::Token::refresh::refresh)
+            .service(controllers::Token::access::access)
             .service(
                 web::scope("/user")
-                    .service(handlers::User::userGet::getAllUsers)
-                    .service(handlers::User::userGet::getUserById)
-                    .service(handlers::User::userPost::postUser)
-                    .service(handlers::User::userPatch::patchUser)
-                    .service(handlers::User::userDelete::deleteUser),
+                    .service(controllers::User::userGet::getAllUsers)
+                    .service(controllers::User::userGet::getUserById)
+                    .service(controllers::User::userPost::postUser)
+                    .service(controllers::User::userPatch::patchUser)
+                    .service(controllers::User::userDelete::deleteUser),
             )
             .service(
                 web::scope("/zipcode")
-                    .service(handlers::ZipCode::zipcodeGet::getAllZipCodes)
-                    .service(handlers::User::userGet::getAllUsers)
-                    .service(handlers::ZipCode::zipcodeGet::getZipCodeById)
-                    .service(handlers::ZipCode::zipcodePost::postZipCode)
-                    .service(handlers::ZipCode::zipcodePatch::patchZipCode)
-                    .service(handlers::ZipCode::zipcodeDelete::deleteZipCode),
+                    .service(controllers::ZipCode::zipcodeGet::getAllZipCodes)
+                    .service(controllers::User::userGet::getAllUsers)
+                    .service(controllers::ZipCode::zipcodeGet::getZipCodeById)
+                    .service(controllers::ZipCode::zipcodePost::postZipCode)
+                    .service(controllers::ZipCode::zipcodePatch::patchZipCode)
+                    .service(controllers::ZipCode::zipcodeDelete::deleteZipCode),
             )
     });
 

@@ -1,8 +1,8 @@
 use crate::shared::{auth::permissionLevelAdminMiddleware, errorHandling};
 use crate::shared::password::getHashedPassword;
 use crate::shared::random::getRandomStr;
-use crate::shared::structs::structsApp::AppState;
-use crate::shared::structs::structsHandler::UserCreate;
+use crate::models::structsApp::AppState;
+use crate::models::structsHandler::UserCreate;
 use actix_web::{post, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 
@@ -31,7 +31,7 @@ pub async fn postUser(data: web::Data<AppState>, info: web::Json<UserCreate>) ->
     .unwrap();
 
     let query: Result<_, sqlx::Error> = sqlx::query!(
-        "INSERT INTO User ( Username , Name, Surname, Password, FK_UserRole) VALUES(?, ?, ?, ?, ?)",
+        "INSERT INTO User (Username, Name, Surname, Password, FK_UserRole) VALUES(?, ?, ?, ?, ?)",
         info.Username,
         info.Name,
         info.Surname,

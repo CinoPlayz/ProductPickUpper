@@ -1,13 +1,13 @@
 use crate::shared::auth::permissionLevelAdminMiddleware;
 use crate::shared::errorHandling;
-use crate::shared::structs::structsApp::AppState;
-use crate::shared::structs::structsHandler::ZipCodeCreate;
+use crate::models::structsApp::AppState;
+use crate::models::structsHandler::ZipCodeCreate;
 use actix_web::{post, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 
 /// Create a zip code
 #[utoipa::path(
-    context_path = "/",
+    context_path = "/zipcode",
     responses(
         (status = 201, description = "Created zip code", body = String),
         (status = 400, description = "Bad Request", body = PickUpError),

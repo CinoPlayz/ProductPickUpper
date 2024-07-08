@@ -1,9 +1,9 @@
 use argon2::{ self, Config, Variant, Version };
 use sqlx::{ MySql, Pool };
 
-use super::structs::structsApp::{ HashingParameters, PickUpError };
+use crate::models::structsApp::{ HashingParameters, PickUpError };
+use crate::models::structsHandler::UserRole;
 use crate::shared::random::getRandomStr;
-use crate::shared::structs::structsHandler::UserRole;
 
 pub fn getHashedPassword(
     password: &str,

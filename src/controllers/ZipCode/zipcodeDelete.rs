@@ -1,12 +1,12 @@
 use crate::shared::auth::permissionLevelAdminMiddleware;
 use crate::shared::errorHandling;
-use crate::shared::structs::structsApp::AppState;
+use crate::models::structsApp::AppState;
 use actix_web::{delete, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 
 /// Delete zip code
 #[utoipa::path(
-    context_path = "/",
+    context_path = "/zipcode",
     responses(
         (status = 200, description = "Deleted zip code", body = String),
         (status = 400, description = "Bad Request", body = PickUpError),

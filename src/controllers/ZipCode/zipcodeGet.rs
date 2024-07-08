@@ -2,14 +2,14 @@ use crate::shared::auth::{
     permissionLevelAdminMiddleware, permissionLevelUserMiddleware,
 };
 use crate::shared::errorHandling;
-use crate::shared::structs::structsApp::AppState;
-use crate::shared::structs::structsHandler::ZipCode;
+use crate::models::structsApp::AppState;
+use crate::models::structsHandler::ZipCode;
 use actix_web::{get, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 
 /// Get all zip codes
 #[utoipa::path(
-    context_path = "/",
+    context_path = "/zipcode",
     responses(
         (status = 200, description = "Returns all zip codes", body = Vec<ZipCode>),
         (status = 401, description = "Unauthorized", body = PickUpError),
@@ -42,7 +42,7 @@ pub async fn getAllZipCodes(data: web::Data<AppState>) -> HttpResponse {
 
 /// Get zip code by Id
 #[utoipa::path(
-    context_path = "/",
+    context_path = "/zipcode",
     responses(
         (status = 200, description = "Returns all users", body = ZipCode),
         (status = 401, description = "Unauthorized", body = PickUpError),

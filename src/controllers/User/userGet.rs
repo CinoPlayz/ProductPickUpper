@@ -1,12 +1,12 @@
 use crate::shared::{auth::permissionLevelAdminMiddleware, errorHandling};
-use crate::shared::structs::structsApp::AppState;
-use crate::shared::structs::structsHandler::User;
+use crate::models::structsApp::AppState;
+use crate::models::structsHandler::User;
 use actix_web::{get, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 
 /// Get all users
 #[utoipa::path(
-    context_path = "/",
+    context_path = "/user",
     responses(
         (status = 200, description = "Returns all users", body = Vec<User>),
         (status = 401, description = "Unauthorized", body = PickUpError),

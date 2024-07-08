@@ -4,11 +4,7 @@ use actix_web_httpauth::extractors::bearer::BearerAuth;
 use sha256::digest;
 use sqlx::{MySql, Pool};
 
-use super::structs::structsApp::AppState;
-use super::structs::structsApp::PermissionLevel;
-use super::structs::structsApp::PickUpError;
-use super::structs::structsApp::PickUpErrorCode;
-use crate::shared::structs::structsApp::PermissionLevelStruct;
+use crate::models::structsApp::{AppState, PermissionLevel, PickUpError, PickUpErrorCode, PermissionLevelStruct};
 
 use actix_web::{
     body::MessageBody,
@@ -121,14 +117,11 @@ async fn authenticateMiddleware(
     }
 }
 
-//TODO: Make this middleware
-//TODO: Make MVC structure
-//TODO: Update to latest
 async fn authenticate(token: &str, pool: &Pool<MySql>) -> Result<bool, PickUpError> {
     let tokenHashed = digest(token);
 
     let query: Result<_, sqlx::Error> = sqlx::query!(
-        "SELECT Id FROM Token WHERE Token=? AND DateEnd > NOW()",
+        "SELECT Id FROM Token WHERE Type=0 AND Token=? AND DateEnd > NOW()",
         tokenHashed
     )
     .fetch_one(pool)
@@ -184,7 +177,7 @@ async fn getPermissionLevel(
     let tokenHashed = digest(token);
 
     let query: Result<PermissionLevelStruct, sqlx::Error> = sqlx
-        ::query_as!(PermissionLevelStruct, "SELECT ur.PermissionLevel FROM UserRole ur INNER JOIN User u ON ur.Id=u.FK_UserRole INNER JOIN Token t ON u.Id=t.FK_User WHERE Token=? AND t.DateEnd > NOW()", tokenHashed)
+        ::query_as!(PermissionLevelStruct, "SELECT ur.PermissionLevel FROM UserRole ur INNER JOIN User u ON ur.Id=u.FK_UserRole INNER JOIN Token t ON u.Id=t.FK_User WHERE t.Type=0 AND Token=? AND t.DateEnd > NOW()", tokenHashed)
         .fetch_one(pool).await;
 
     match query {

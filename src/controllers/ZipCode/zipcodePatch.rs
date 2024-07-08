@@ -1,14 +1,14 @@
 use crate::shared::auth::permissionLevelAdminMiddleware;
 use crate::shared::errorHandling;
-use crate::shared::structs::structsApp::{AppState, PickUpError, PickUpErrorCode};
-use crate::shared::structs::structsHandler::ZipCodeOptional;
+use crate::models::structsApp::{AppState, PickUpError, PickUpErrorCode};
+use crate::models::structsHandler::ZipCodeOptional;
 use actix_web::{patch, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 use sqlx::{MySql, QueryBuilder};
 
 /// Update properties of a zip code
 #[utoipa::path(
-    context_path = "/",
+    context_path = "/zipcode",
     responses(
         (status = 200, description = "Update properties of a zip code", body = String),
         (status = 400, description = "Bad Request", body = PickUpError),
