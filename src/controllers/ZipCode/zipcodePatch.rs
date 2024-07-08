@@ -1,7 +1,7 @@
 use crate::shared::auth::permissionLevelAdminMiddleware;
 use crate::shared::errorHandling;
-use crate::models::structsApp::{AppState, PickUpError, PickUpErrorCode};
-use crate::models::structsHandler::ZipCodeOptional;
+use crate::models::App::{AppState, PickUpError, PickUpErrorCode};
+use crate::models::ZipCode::ZipCodeOptional;
 use actix_web::{patch, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 use sqlx::{MySql, QueryBuilder};

@@ -4,7 +4,7 @@ use actix_web_httpauth::extractors::bearer::BearerAuth;
 use sha256::digest;
 use sqlx::{MySql, Pool};
 
-use crate::models::structsApp::{AppState, PermissionLevel, PickUpError, PickUpErrorCode, PermissionLevelStruct};
+use crate::models::App::{AppState, PermissionLevel, PickUpError, PickUpErrorCode, PermissionLevelStruct};
 
 use actix_web::{
     body::MessageBody,

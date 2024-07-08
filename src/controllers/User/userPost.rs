@@ -1,8 +1,8 @@
 use crate::shared::{auth::permissionLevelAdminMiddleware, errorHandling};
 use crate::shared::password::getHashedPassword;
 use crate::shared::random::getRandomStr;
-use crate::models::structsApp::AppState;
-use crate::models::structsHandler::UserCreate;
+use crate::models::App::AppState;
+use crate::models::User::UserCreate;
 use actix_web::{post, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 

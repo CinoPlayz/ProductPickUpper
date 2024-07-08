@@ -10,7 +10,9 @@ use crate::controllers::ZipCode::{ zipcodeGet, zipcodePost, zipcodePatch, zipcod
 use crate::controllers::Token::{refresh, access};
 use derive_more::Display;
 
-use super::structsHandler::{ TokenOnly, User, UserCreate, UserLogin, UserOptional, UserRole, ZipCode, ZipCodeCreate, ZipCodeOptional };
+use super::Token::TokenOnly;
+use super::User::{User, UserCreate, UserLogin, UserOptional, UserRole};
+use super::ZipCode::{ZipCode, ZipCodeCreate, ZipCodeOptional};
 
 pub struct AppState {
     pub version: String,

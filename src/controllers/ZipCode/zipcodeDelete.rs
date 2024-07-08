@@ -1,6 +1,6 @@
 use crate::shared::auth::permissionLevelAdminMiddleware;
 use crate::shared::errorHandling;
-use crate::models::structsApp::AppState;
+use crate::models::App::AppState;
 use actix_web::{delete, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 

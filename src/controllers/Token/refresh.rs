@@ -1,8 +1,9 @@
 use actix_web::{ post, web, HttpResponse };
 use crate::shared::errorHandling;
 use crate::shared::random::generateToken;
-use crate::models::structsApp::{ AppState, PickUpError, PickUpErrorCode };
-use crate::models::structsHandler::{ TokenOnly, UserCredentials, UserLogin };
+use crate::models::App::{ AppState, PickUpError, PickUpErrorCode };
+use crate::models::Token::TokenOnly;
+use crate::models::User::{UserCredentials, UserLogin};
 use crate::shared::password::isPasswordCorrect;
 
 #[utoipa::path(

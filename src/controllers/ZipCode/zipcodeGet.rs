@@ -2,8 +2,8 @@ use crate::shared::auth::{
     permissionLevelAdminMiddleware, permissionLevelUserMiddleware,
 };
 use crate::shared::errorHandling;
-use crate::models::structsApp::AppState;
-use crate::models::structsHandler::ZipCode;
+use crate::models::App::AppState;
+use crate::models::ZipCode::ZipCode;
 use actix_web::{get, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 

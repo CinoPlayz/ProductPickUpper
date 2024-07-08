@@ -1,6 +1,6 @@
 use actix_web::HttpResponse;
 
-use crate::models::structsApp::{PickUpError, PickUpErrorCode};
+use crate::models::App::{PickUpError, PickUpErrorCode};
 
 /// Get Http Response from sqlx::Error which can be Internal or Database Error
 pub fn getHRFromErrorDatabase(error: sqlx::Error) -> HttpResponse {

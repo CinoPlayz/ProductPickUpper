@@ -3,8 +3,8 @@ use actix_web_httpauth::extractors::bearer::BearerAuth;
 use sha256::digest;
 use crate::shared::errorHandling;
 use crate::shared::random::generateToken;
-use crate::models::structsApp::{ AppState, PickUpError, PickUpErrorCode };
-use crate::models::structsHandler::{ Token, TokenOnly };
+use crate::models::App::{ AppState, PickUpError, PickUpErrorCode };
+use crate::models::Token::{ Token, TokenOnly };
 
 #[utoipa::path(
     context_path = "/",

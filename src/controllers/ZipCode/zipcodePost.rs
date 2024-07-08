@@ -1,7 +1,7 @@
 use crate::shared::auth::permissionLevelAdminMiddleware;
 use crate::shared::errorHandling;
-use crate::models::structsApp::AppState;
-use crate::models::structsHandler::ZipCodeCreate;
+use crate::models::App::AppState;
+use crate::models::ZipCode::ZipCodeCreate;
 use actix_web::{post, web, HttpResponse};
 use actix_web_lab::middleware::from_fn;
 

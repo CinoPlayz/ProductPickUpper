@@ -3,7 +3,7 @@ use crate::shared::{
     chrono::getCurrentTimeStr,
     password::createRoot
 };
-use crate::models::structsApp:: {AppState, HashingParameters, ApiDoc, PickUpError, PickUpErrorCode};
+use crate::models::App:: {AppState, HashingParameters, ApiDoc, PickUpError, PickUpErrorCode};
 use actix_web::{
     error, get, http::header, web::{self, JsonConfig, PathConfig}, App, HttpRequest, HttpResponse, HttpServer, Responder
 };
